@@ -8,10 +8,16 @@ import traceback
 PLAYBOOK_DIR = "/root/flaskconnection"  # Directory containing playbooks
 ZIP_FILE = "playbooks.zip"
 
-# Create ZIP file of playbooks
+# -------------------------------
+# Create zip of playbooks
+# -------------------------------
 async def create_zip():
+    if not os.path.exists(PLAYBOOK_DIR):
+        raise FileNotFoundError(f"Directory {PLAYBOOK_DIR} does not exist")
+
     if os.path.exists(ZIP_FILE):
         os.remove(ZIP_FILE)
+
     with zipfile.ZipFile(ZIP_FILE, 'w') as zipf:
         for root, dirs, files in os.walk(PLAYBOOK_DIR):
             for file in files:
@@ -19,13 +25,15 @@ async def create_zip():
                 arcname = os.path.relpath(full_path, PLAYBOOK_DIR)
                 zipf.write(full_path, arcname)
 
-# Send ZIP file over WebSocket
+# -------------------------------
+# Send file over WebSocket
+# -------------------------------
 async def send_file(websocket):
     try:
         await create_zip()
         size = os.path.getsize(ZIP_FILE)
         await websocket.send(json.dumps({"type": "file_info", "size": size}))
-        print(f"Sending ZIP of size {size} bytes")
+        print(f"[INFO] Sending ZIP of size {size} bytes")
 
         with open(ZIP_FILE, "rb") as f:
             while chunk := f.read(4096):
@@ -33,13 +41,15 @@ async def send_file(websocket):
 
         await asyncio.sleep(1)
         await websocket.send(json.dumps({"type": "deploy"}))
-        print("File sent successfully, deploy signal sent.")
+        print("[INFO] File sent successfully, deploy signal sent.")
     except Exception as e:
         print(f"[ERROR in send_file]: {e}")
         traceback.print_exc()
         await websocket.send(json.dumps({"type": "error", "message": str(e)}))
 
-# Handle incoming WebSocket connections
+# -------------------------------
+# WebSocket handler
+# -------------------------------
 async def handler(websocket, path):
     print(f"[INFO] Agent connected from {websocket.remote_address}")
     try:
@@ -53,10 +63,18 @@ async def handler(websocket, path):
     except Exception as e:
         print(f"[ERROR in handler]: {e}")
         traceback.print_exc()
+        try:
+            await websocket.send(json.dumps({"type": "error", "message": str(e)}))
+        except:
+            pass
 
+# -------------------------------
+# Start WebSocket server
+# -------------------------------
 async def main():
-    async with websockets.serve(handler, "0.0.0.0", 8000):
-        print("✅ Cloud WebSocket Server running on ws://0.0.0.0:8000")
+    async with websockets.serve(handler, "0.0.0.0", 8000, max_size=None):
+        print("✅ Cloud WebSocket server running on ws://0.0.0.0:8000")
         await asyncio.Future()  # Keep running
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
