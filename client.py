@@ -123,5 +123,3 @@ if __name__ == "__main__":
         asyncio.run(run_client())
     except Exception as e:
         print(f"[ERROR in WebSocket client]: {e}")
-async def handler(websocket, path):
-    # ...existing code...
