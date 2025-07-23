@@ -19,7 +19,7 @@ async def create_zip():
     if os.path.exists(ZIP_FILE):
         os.remove(ZIP_FILE)
 
-    with zipfile.ZipFile(ZIP_FILE, 'w') as zipf:
+    with zipfile.ZipFile(ZIP_FILE, 'w', allowZip64=True) as zipf:
         for root, dirs, files in os.walk(PLAYBOOK_DIR):
             for file in files:
                 full_path = os.path.join(root, file)
@@ -79,3 +79,9 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+with zipfile.ZipFile(ZIP_FILE, 'w', allowZip64=True) as zipf:
+    for root, dirs, files in os.walk(PLAYBOOK_DIR):
+        for file in files:
+            full_path = os.path.join(root, file)
+            arcname = os.path.relpath(full_path, PLAYBOOK_DIR)
+            zipf.write(full_path, arcname)
