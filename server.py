@@ -43,9 +43,16 @@ async def run_command(request: Request):
         return JSONResponse({"error": "No agent connected"}, status_code=503)
     data = await request.json()
     command = data.get("command")
-    if not command:
-        return JSONResponse({"error": "No command provided"}, status_code=400)
+    ip = data.get("ip")
+    username = data.get("username")
+    password = data.get("password")
+    if not all([command, ip, username, password]):
+        return JSONResponse({"error": "Missing required fields"}, status_code=400)
     try:
+        # Send SSH details as JSON string (first message)
+        ssh_details = {"ip": ip, "username": username, "password": password}
+        await agent_ws.send_text(json.dumps(ssh_details))
+        # Send command as plain text (second message)
         await agent_ws.send_text(command)
         result = await agent_ws.receive_text()
         return JSONResponse({"output": result})
