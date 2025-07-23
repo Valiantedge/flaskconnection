@@ -4,7 +4,7 @@ import asyncio
 import websockets
 import json
 
-PLAYBOOK_DIR = "/opt/playbooks"
+PLAYBOOK_DIR = "/root/flaskconnection"
 ZIP_FILE = "playbooks.zip"
 
 async def create_zip():
@@ -38,7 +38,10 @@ async def handler(websocket, path):
         else:
             print(f"Agent Log: {message}")
 
-start_server = websockets.serve(handler, "0.0.0.0", 8000)
-asyncio.get_event_loop().run_until_complete(start_server)
-print("Cloud WebSocket server running on ws://0.0.0.0:8000")
-asyncio.get_event_loop().run_forever()
+async def main():
+    async with websockets.serve(handler, "0.0.0.0", 8000):
+        print("Cloud WebSocket server running on ws://0.0.0.0:8000")
+        await asyncio.Future()  # Keep running
+
+asyncio.run(main())
+
