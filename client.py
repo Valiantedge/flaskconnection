@@ -8,10 +8,11 @@ from scp import SCPClient
 
 TEMP_DIR = "received_playbooks"
 ZIP_FILE = "playbooks.zip"
-TARGET_HOST = "192.168.1.50"  # Replace with target server IP
-SSH_USER = "ec2-user"         # Replace with SSH username
-SSH_KEY = "id_rsa"            # Replace with private key path
+TARGET_HOST = "192.168.32.243"  # Replace with target server IP
+SSH_USER = "ubuntu"             # Replace with SSH username
+SSH_PASSWORD = "Cvbnmjkl@30263" # Replace with SSH password
 
+# Extract zip
 async def extract_zip():
     if os.path.exists(TEMP_DIR):
         for root, dirs, files in os.walk(TEMP_DIR, topdown=False):
@@ -20,32 +21,41 @@ async def extract_zip():
             for d in dirs:
                 os.rmdir(os.path.join(root, d))
         os.rmdir(TEMP_DIR)
-    os.makedirs(TEMP_DIR, exist_ok=True)
 
+    os.makedirs(TEMP_DIR, exist_ok=True)
     with zipfile.ZipFile(ZIP_FILE, 'r') as zip_ref:
         zip_ref.extractall(TEMP_DIR)
 
-def ssh_execute_and_stream(command, websocket):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(TARGET_HOST, username=SSH_USER, key_filename=SSH_KEY)
+# SSH to target and deploy
+async def ssh_execute_and_stream(command, websocket):
+    def run_ssh():
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(TARGET_HOST, username=SSH_USER, password=SSH_PASSWORD)
 
-    # Copy playbooks
-    with SCPClient(ssh.get_transport()) as scp:
-        scp.put(TEMP_DIR, recursive=True, remote_path="/tmp/deployment")
+        # Copy playbooks to remote /tmp/deployment
+        with SCPClient(ssh.get_transport()) as scp:
+            scp.put(TEMP_DIR, recursive=True, remote_path="/tmp/deployment")
 
-    # Execute deploy.sh
-    stdin, stdout, stderr = ssh.exec_command("cd /tmp/deployment && chmod +x deploy.sh && ./deploy.sh")
-    for line in iter(stdout.readline, ""):
-        asyncio.run(websocket.send(line.strip()))
-    for line in iter(stderr.readline, ""):
-        asyncio.run(websocket.send("ERR: " + line.strip()))
+        # Run deploy.sh on target
+        stdin, stdout, stderr = ssh.exec_command(f"cd /tmp/deployment && chmod +x deploy.sh && {command}")
+        output_lines = stdout.readlines()
+        error_lines = stderr.readlines()
+        ssh.close()
+        return output_lines, error_lines
 
-    ssh.close()
+    # Run SSH in thread
+    output_lines, error_lines = await asyncio.to_thread(run_ssh)
+
+    # Send logs back to cloud
+    for line in output_lines:
+        await websocket.send(line.strip())
+    for line in error_lines:
+        await websocket.send("ERR: " + line.strip())
 
 async def run_client():
-    uri = "ws://<CLOUD_SERVER_IP>:8000"
-    async with websockets.connect(uri) as websocket:
+    uri = "ws://13.58.212.239:8000"  # Replace with cloud IP
+    async with websockets.connect(uri, max_size=None) as websocket:
         await websocket.send("deploy")
         file = open(ZIP_FILE, "wb")
         expected_size = 0
@@ -62,11 +72,12 @@ async def run_client():
                 data = json.loads(msg)
                 if data.get("type") == "file_info":
                     expected_size = data["size"]
-                    await websocket.send(f"Expecting {expected_size} bytes")
+                    print(f"Expecting {expected_size} bytes...")
                 elif data.get("type") == "deploy":
+                    file.close()
                     await extract_zip()
                     await websocket.send("Files extracted. Running SSH deployment...")
-                    ssh_execute_and_stream("bash deploy.sh", websocket)
+                    await ssh_execute_and_stream("./deploy.sh", websocket)
                     await websocket.send("Deployment completed.")
                     break
 
