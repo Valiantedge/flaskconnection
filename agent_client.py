@@ -1,6 +1,6 @@
 import asyncio
 import websockets
-import subprocess
+from agent_exec import run_remote_command
 
 async def run_agent():
     uri = "ws://13.58.212.239:8765/ws"  # Replace with your server's IP if needed
@@ -9,12 +9,8 @@ async def run_agent():
         # Wait for command from server
         command = await websocket.recv()
         print(f"Received command from server: {command}")
-        # Run the command locally
-        try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            output = result.stdout + result.stderr
-        except Exception as e:
-            output = f"Error running command: {e}"
+        # Run the command on the private server via agent_exec
+        output = run_remote_command(command)
         # Send output back to server
         await websocket.send(output)
 

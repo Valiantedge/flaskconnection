@@ -1,8 +1,11 @@
-from fastapi import FastAPI, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
+import asyncio
 
-app = FastAPI()
+
+# Store the agent WebSocket connection
+agent_ws = None
 
 @app.get("/")
 def read_root():
@@ -18,19 +21,34 @@ def read_root():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    global agent_ws
     await websocket.accept()
+    agent_ws = websocket
     print(f"New WebSocket client connected: {websocket.client}")
     try:
-        # Send a command to the agent
-        command = "ls -l"  # You can change this to any command you want
-        print(f"Sending command to agent: {command}")
-        await websocket.send_text(command)
-
-        # Wait for the agent's response
-        response = await websocket.receive_text()
-        print(f"Response from agent: {response}")
+        while True:
+            # Keep connection open, agent waits for commands
+            await asyncio.sleep(1)
     except Exception as e:
         print(f"WebSocket connection closed: {e}")
+        agent_ws = None
+
+# HTTP endpoint to send command to agent and get result
+@app.post("/run")
+async def run_command(request: Request):
+    global agent_ws
+    if agent_ws is None:
+        return JSONResponse({"error": "No agent connected"}, status_code=503)
+    data = await request.json()
+    command = data.get("command")
+    if not command:
+        return JSONResponse({"error": "No command provided"}, status_code=400)
+    try:
+        await agent_ws.send_text(command)
+        result = await agent_ws.receive_text()
+        return JSONResponse({"output": result})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8765)
