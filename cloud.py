@@ -12,6 +12,7 @@ ZIP_FILE = "playbooks.zip"
 # Create zip of playbooks
 # -------------------------------
 async def create_zip():
+    print(f"[DEBUG] Checking if directory exists: {PLAYBOOK_DIR} -> {os.path.exists(PLAYBOOK_DIR)}")
     if not os.path.exists(PLAYBOOK_DIR):
         raise FileNotFoundError(f"Directory {PLAYBOOK_DIR} does not exist")
 

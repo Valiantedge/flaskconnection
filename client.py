@@ -75,26 +75,48 @@ async def run_client():
         received = 0
 
         while True:
-            msg = await websocket.recv()
-            if isinstance(msg, bytes):
-                file.write(msg)
-                received += len(msg)
-                if expected_size > 0 and received >= expected_size:
-                    file.close()
-            else:
-                data = json.loads(msg)
-                if data.get("type") == "file_info":
-                    expected_size = data["size"]
-                    print(f"[INFO] Expecting {expected_size} bytes...")
-                elif data.get("type") == "deploy":
-                    file.close()
-                    print("[INFO] ZIP received. Extracting...")
-                    await extract_zip()
-                    await websocket.send("Files extracted. Running SSH deployment...")
-                    await ssh_execute_and_stream("./deploy.sh", websocket)
-                    await websocket.send("Deployment completed.")
-                    print("[INFO] Deployment completed.")
-                    break
+            try:
+                msg = await websocket.recv()
+                print(f"[DEBUG] Received message: {type(msg)} - {msg if isinstance(msg, str) else '[binary data]'}")
+                if isinstance(msg, bytes):
+                    file.write(msg)
+                    received += len(msg)
+                    if expected_size > 0 and received >= expected_size:
+                        file.close()
+                else:
+                    try:
+                        data = json.loads(msg)
+                    except Exception as e:
+                        print(f"[ERROR] Failed to parse JSON: {e}\nRaw message: {msg}")
+                        continue
+                    if data.get("type") == "file_info":
+                        expected_size = data["size"]
+                        print(f"[INFO] Expecting {expected_size} bytes...")
+                    elif data.get("type") == "deploy":
+                        file.close()
+                        print("[INFO] ZIP received. Extracting...")
+                        try:
+                            await extract_zip()
+                        except Exception as e:
+                            print(f"[ERROR] Failed to extract ZIP: {e}")
+                            await websocket.send(json.dumps({"type": "error", "message": str(e)}))
+                            break
+                        await websocket.send("Files extracted. Running SSH deployment...")
+                        try:
+                            await ssh_execute_and_stream("./deploy.sh", websocket)
+                        except Exception as e:
+                            print(f"[ERROR] SSH deployment failed: {e}")
+                            await websocket.send(json.dumps({"type": "error", "message": str(e)}))
+                            break
+                        await websocket.send("Deployment completed.")
+                        print("[INFO] Deployment completed.")
+                        break
+                    elif data.get("type") == "error":
+                        print(f"[ERROR] Server error: {data.get('message')}")
+                        break
+            except Exception as e:
+                print(f"[ERROR] Exception in message loop: {e}")
+                break
 
 if __name__ == "__main__":
     try:
