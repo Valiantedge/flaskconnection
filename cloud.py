@@ -49,9 +49,9 @@ async def send_file(websocket):
         await websocket.send(json.dumps({"type": "error", "message": str(e)}))
 
 # -------------------------------
-# WebSocket handler
+# WebSocket handler (single argument for compatibility)
 # -------------------------------
-async def handler(websocket, path):
+async def handler(websocket):
     print(f"[INFO] Agent connected from {websocket.remote_address}")
     try:
         async for message in websocket:
