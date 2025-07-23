@@ -1,26 +1,33 @@
-# server.py
+from fastapi import FastAPI, WebSocket
+from fastapi.responses import HTMLResponse
+import uvicorn
 
-import asyncio
-import websockets
+app = FastAPI()
 
-connected_agents = set()
+@app.get("/")
+def read_root():
+    return HTMLResponse("""
+        <html>
+        <head><title>Agent Server</title></head>
+        <body>
+            <h2>Agent WebSocket Server is running!</h2>
+            <p>Connect to <code>ws://[server_ip]:8765/ws</code> using a WebSocket client.</p>
+        </body>
+        </html>
+    """)
 
-async def handler(websocket):
-    connected_agents.add(websocket)
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print(f"New WebSocket client connected: {websocket.client}")
     try:
-        async for message in websocket:
-            # Handle received message from agent; for example, broadcast or forward it
-            print(f"Received from agent: {message}")
-            # You can relay this message to private server or clients as needed
-    except websockets.ConnectionClosed:
-        pass
-    finally:
-        connected_agents.remove(websocket)
-
-async def main():
-    server = await websockets.serve(handler, "0.0.0.0", 8765)
-    print("WebSocket server started on ws://0.0.0.0:8765")
-    await server.wait_closed()
+        while True:
+            data = await websocket.receive_text()
+            print(f"Received message: {data}")
+            # Echo back for demo
+            await websocket.send_text(f"Echo: {data}")
+    except Exception as e:
+        print(f"WebSocket connection closed: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    uvicorn.run("server:app", host="0.0.0.0", port=8765)
