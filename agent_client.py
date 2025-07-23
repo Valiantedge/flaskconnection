@@ -2,7 +2,7 @@ import asyncio
 import websockets
 
 async def run_client():
-    uri = "ws://YOUR_CLOUD_SERVER_IP:8000/ws"
+    uri = "ws://13.58.212.239:8000/ws/commands"  # Match FastAPI route
     async with websockets.connect(uri) as websocket:
         await websocket.send("deploy")
         response = await websocket.recv()
