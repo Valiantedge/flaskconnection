@@ -3,10 +3,12 @@ import zipfile
 import asyncio
 import websockets
 import json
+import traceback
 
-PLAYBOOK_DIR = "/root/flaskconnection"
+PLAYBOOK_DIR = "/root/flaskconnection"  # Directory containing playbooks
 ZIP_FILE = "playbooks.zip"
 
+# Create ZIP file of playbooks
 async def create_zip():
     if os.path.exists(ZIP_FILE):
         os.remove(ZIP_FILE)
@@ -17,31 +19,44 @@ async def create_zip():
                 arcname = os.path.relpath(full_path, PLAYBOOK_DIR)
                 zipf.write(full_path, arcname)
 
+# Send ZIP file over WebSocket
 async def send_file(websocket):
-    await create_zip()
-    size = os.path.getsize(ZIP_FILE)
-    await websocket.send(json.dumps({"type": "file_info", "size": size}))
+    try:
+        await create_zip()
+        size = os.path.getsize(ZIP_FILE)
+        await websocket.send(json.dumps({"type": "file_info", "size": size}))
+        print(f"Sending ZIP of size {size} bytes")
 
-    with open(ZIP_FILE, "rb") as f:
-        while chunk := f.read(4096):
-            await websocket.send(chunk)
+        with open(ZIP_FILE, "rb") as f:
+            while chunk := f.read(4096):
+                await websocket.send(chunk)
 
-    await asyncio.sleep(1)
-    await websocket.send(json.dumps({"type": "deploy"}))
+        await asyncio.sleep(1)
+        await websocket.send(json.dumps({"type": "deploy"}))
+        print("File sent successfully, deploy signal sent.")
+    except Exception as e:
+        print(f"[ERROR in send_file]: {e}")
+        traceback.print_exc()
+        await websocket.send(json.dumps({"type": "error", "message": str(e)}))
 
+# Handle incoming WebSocket connections
 async def handler(websocket, path):
-    print("Agent connected.")
-    async for message in websocket:
-        if message == "deploy":
-            print("Deploy command received. Sending files...")
-            await send_file(websocket)
-        else:
-            print(f"Agent Log: {message}")
+    print(f"[INFO] Agent connected from {websocket.remote_address}")
+    try:
+        async for message in websocket:
+            print(f"[INFO] Received from agent: {message}")
+            if message == "deploy":
+                print("[INFO] Deploy command received, preparing file...")
+                await send_file(websocket)
+            else:
+                print(f"[AGENT LOG]: {message}")
+    except Exception as e:
+        print(f"[ERROR in handler]: {e}")
+        traceback.print_exc()
 
 async def main():
     async with websockets.serve(handler, "0.0.0.0", 8000):
-        print("Cloud WebSocket server running on ws://0.0.0.0:8000")
+        print("✅ Cloud WebSocket Server running on ws://0.0.0.0:8000")
         await asyncio.Future()  # Keep running
 
 asyncio.run(main())
-
