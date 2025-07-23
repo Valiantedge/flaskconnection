@@ -21,11 +21,14 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     print(f"New WebSocket client connected: {websocket.client}")
     try:
-        while True:
-            data = await websocket.receive_text()
-            print(f"Received message: {data}")
-            # Echo back for demo
-            await websocket.send_text(f"Echo: {data}")
+        # Send a command to the agent
+        command = "ls -l"  # You can change this to any command you want
+        print(f"Sending command to agent: {command}")
+        await websocket.send_text(command)
+
+        # Wait for the agent's response
+        response = await websocket.receive_text()
+        print(f"Response from agent: {response}")
     except Exception as e:
         print(f"WebSocket connection closed: {e}")
 
