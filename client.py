@@ -6,11 +6,14 @@ import os
 import paramiko
 from scp import SCPClient
 
+# -------------------------------
+# Configurations
+# -------------------------------
 TEMP_DIR = "received_playbooks"
 ZIP_FILE = "playbooks.zip"
-TARGET_HOST = "192.168.32.243"  # Private server IP
-SSH_USER = "ubuntu"             # SSH username
-SSH_PASSWORD = "Cvbnmjkl@30263" # SSH password
+TARGET_HOST = "192.168.32.243"  # Replace with your target server IP
+SSH_USER = "ubuntu"             # Replace with SSH username
+SSH_PASSWORD = "Cvbnmjkl@30263" # Replace with SSH password
 
 # -------------------------------
 # Extract received zip file
@@ -49,7 +52,7 @@ async def ssh_execute_and_stream(command, websocket):
         ssh.close()
         return output_lines, error_lines
 
-    # Run SSH in thread
+    # Run SSH in a thread (non-blocking)
     output_lines, error_lines = await asyncio.to_thread(run_ssh)
 
     # Send logs back to cloud
@@ -59,10 +62,10 @@ async def ssh_execute_and_stream(command, websocket):
         await websocket.send("ERR: " + line.strip())
 
 # -------------------------------
-# Main WebSocket client
+# Main WebSocket Client
 # -------------------------------
 async def run_client():
-    uri = "ws://13.58.212.239:8000"  # Cloud WebSocket server
+    uri = "ws://13.58.212.239:8000"  # Replace with your cloud server IP
     print("[INFO] Connecting to cloud...")
     async with websockets.connect(uri, max_size=None) as websocket:
         print("[INFO] Connected to cloud server.")
@@ -76,4 +79,25 @@ async def run_client():
             if isinstance(msg, bytes):
                 file.write(msg)
                 received += len(msg)
-                if received >= expected_size and_
+                if expected_size > 0 and received >= expected_size:
+                    file.close()
+            else:
+                data = json.loads(msg)
+                if data.get("type") == "file_info":
+                    expected_size = data["size"]
+                    print(f"[INFO] Expecting {expected_size} bytes...")
+                elif data.get("type") == "deploy":
+                    file.close()
+                    print("[INFO] ZIP received. Extracting...")
+                    await extract_zip()
+                    await websocket.send("Files extracted. Running SSH deployment...")
+                    await ssh_execute_and_stream("./deploy.sh", websocket)
+                    await websocket.send("Deployment completed.")
+                    print("[INFO] Deployment completed.")
+                    break
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(run_client())
+    except Exception as e:
+        print(f"[ERROR in WebSocket client]: {e}")
