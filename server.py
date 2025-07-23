@@ -4,6 +4,8 @@ import uvicorn
 import asyncio
 
 
+app = FastAPI()
+
 # Store the agent WebSocket connection
 agent_ws = None
 
