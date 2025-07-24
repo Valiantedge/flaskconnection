@@ -167,6 +167,7 @@ start "" cmd /k "python %AGENT_SCRIPT_PATH% & pause"
 
 echo Customer agent installed and set to run at startup. No manual steps required.
 
+pause
 goto :eof
 
 :write_agent_script
