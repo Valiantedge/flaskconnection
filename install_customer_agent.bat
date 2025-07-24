@@ -16,6 +16,16 @@ dir "C:\Program Files\WireGuard" >> "%LOGFILE%"
 set WG_PRIV_KEY=C:\WireGuard\wg_private.key
 set WG_PUB_KEY=C:\WireGuard\wg_public.key
 set WG_CONFIG=C:\WireGuard\wg0.conf
+REM Download wg.exe if missing (Windows CLI)
+if not exist "C:\Program Files\WireGuard\wg.exe" (
+    echo Downloading wg.exe CLI tool...
+    powershell -Command "try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile 'C:\Program Files\WireGuard\wg.exe' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }"
+    if exist "C:\Program Files\WireGuard\wg.exe" (
+        echo wg.exe downloaded successfully.>> "%LOGFILE%"
+    ) else (
+        echo ERROR: Failed to download wg.exe. Key generation will be skipped.>> "%LOGFILE%"
+    )
+)
 REM Check for wg.exe before keygen
 if exist "C:\Program Files\WireGuard\wg.exe" (
     if not exist "%WG_PRIV_KEY%" (
