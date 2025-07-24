@@ -25,31 +25,32 @@ REM Require wg.exe to be pre-placed in C:\WireGuard
 REM Check for wg.exe before keygen
 if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
-        echo Generating WireGuard private key...
-        "%WG_EXE%" genkey > "%WG_PRIV_KEY%"
-        REM Validate private key length
-        set /p PRIVKEY=<"%WG_PRIV_KEY%"
-        set PRIVKEYLEN=0
-        for /f %%A in ("%WG_PRIV_KEY%") do set PRIVKEYLEN=%%~zA
+        echo Generating WireGuard private key...>> "%LOGFILE%"
+        "%WG_EXE%" genkey > "%WG_PRIV_KEY%" 2>> "%LOGFILE%"
+        REM Log file existence and permissions
         if not exist "%WG_PRIV_KEY%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
-        ) else if "%PRIVKEY%"=="" (
-            echo ERROR: Private key file is empty.>> "%LOGFILE%"
-        ) else if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" (
-            echo Private key: %PRIVKEY%>> "%LOGFILE%"
-            echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
-            if not exist "%WG_PUB_KEY%" (
-                echo ERROR: Public key file was not created.>> "%LOGFILE%"
-            )
+            echo Check permissions for C:\WireGuard and run as Administrator.>> "%LOGFILE%"
         ) else (
-            echo ERROR: Private key is not the correct length.>> "%LOGFILE%"
+            set /p PRIVKEY=<"%WG_PRIV_KEY%"
+            if "%PRIVKEY%"=="" (
+                echo ERROR: Private key file is empty.>> "%LOGFILE%"
+            ) else if not "%PRIVKEY:~43,1%"=="" (
+                echo Private key: %PRIVKEY%>> "%LOGFILE%"
+                echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
+                if not exist "%WG_PUB_KEY%" (
+                    echo ERROR: Public key file was not created.>> "%LOGFILE%"
+                )
+            ) else (
+                echo ERROR: Private key is not the correct length.>> "%LOGFILE%"
+            )
         )
     )
     if exist "%WG_PRIV_KEY%" (
         set /p PRIVKEY=<"%WG_PRIV_KEY%"
         if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" (
-            echo Generating WireGuard public key...
-            echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
+            echo Generating WireGuard public key...>> "%LOGFILE%"
+            echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
         ) else (
             echo ERROR: Private key is not the correct length. Public key not generated.>> "%LOGFILE%"
         )
