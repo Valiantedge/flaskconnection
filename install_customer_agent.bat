@@ -373,5 +373,5 @@ REM Fetch WireGuard config from cloud and install
 python C:\WireGuard\fetch_and_install_wg_config.py
 
 REM Start agent in a new window for immediate testing (window always stays open)
-start "" cmd /k "python C:\WireGuard\customer_agent_api.py || echo Agent crashed with error code %errorlevel% && pause"
+start "" cmd /k "python C:\WireGuard\customer_agent_api.py & pause"
 
