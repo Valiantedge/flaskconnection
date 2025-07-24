@@ -1,4 +1,6 @@
 @echo off
+REM Ensure C:\WireGuard directory exists before anything else
+if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 set LOGFILE=C:\WireGuard\agent_install.log
 echo Batch started at %DATE% %TIME% > "%LOGFILE%"
 REM Detect if running in PowerShell (not cmd.exe)
@@ -35,8 +37,6 @@ if not exist "C:\Program Files\WireGuard\wireguard.exe" (
     del %TEMP%\wireguard-installer.exe
 )
 
-echo Ensuring C:\WireGuard directory exists...>> "%LOGFILE%"
-if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 REM Ensure clean agent script file
 if exist "C:\WireGuard\customer_agent_api.py" del "C:\WireGuard\customer_agent_api.py"
 REM Write customer_agent_api.py directly from batch file
