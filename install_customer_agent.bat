@@ -56,15 +56,29 @@ set CLIENT_ADDRESS=10.0.0.2/32
 
 REM Write WireGuard config file
 echo [Interface]> "C:\WireGuard\wg0.conf"
-echo PrivateKey = %CLIENT_PRIVATE_KEY%>> "C:\WireGuard\wg0.conf"
+if not "%CLIENT_PRIVATE_KEY%"=="" (
+    echo PrivateKey = %CLIENT_PRIVATE_KEY%>> "C:\WireGuard\wg0.conf"
+) else (
+    echo ERROR: PrivateKey is missing!>> "C:\WireGuard\wg0.conf"
+)
 echo Address = %CLIENT_ADDRESS%>> "C:\WireGuard\wg0.conf"
 echo DNS = 8.8.8.8>> "C:\WireGuard\wg0.conf"
 echo.>> "C:\WireGuard\wg0.conf"
 echo [Peer]>> "C:\WireGuard\wg0.conf"
-echo PublicKey = %SERVER_PUBLIC_KEY%>> "C:\WireGuard\wg0.conf"
-echo Endpoint = %SERVER_ENDPOINT%>> "C:\WireGuard\wg0.conf"
+if not "%SERVER_PUBLIC_KEY%"=="" (
+    echo PublicKey = %SERVER_PUBLIC_KEY%>> "C:\WireGuard\wg0.conf"
+) else (
+    echo ERROR: PublicKey is missing!>> "C:\WireGuard\wg0.conf"
+)
+if not "%SERVER_ENDPOINT%"=="" (
+    echo Endpoint = %SERVER_ENDPOINT%>> "C:\WireGuard\wg0.conf"
+) else (
+    echo ERROR: Endpoint is missing!>> "C:\WireGuard\wg0.conf"
+)
 echo AllowedIPs = 0.0.0.0/0>> "C:\WireGuard\wg0.conf"
 echo PersistentKeepalive = 25>> "C:\WireGuard\wg0.conf"
+REM Activate WireGuard tunnel automatically
+"C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "C:\WireGuard\wg0.conf"
 REM Write improved customer_agent_api.py with automated IP reporting
 echo from fastapi import FastAPI, Request> "C:\WireGuard\customer_agent_api.py"
 echo import os>> "C:\WireGuard\customer_agent_api.py"
