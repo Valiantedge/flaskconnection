@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import JSONResponse
 import uvicorn
 import asyncio
@@ -21,7 +21,7 @@ async def websocket_endpoint(websocket: WebSocket):
         agent_ws = None
 
 @app.post("/send-script")
-async def send_script(request):
+async def send_script(request: Request):
     global agent_ws
     if agent_ws is None:
         return JSONResponse({"error": "No agent connected"}, status_code=503)
