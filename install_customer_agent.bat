@@ -97,6 +97,7 @@ schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python C:
 echo Customer agent installed and set to run at startup. No manual steps required.
 
 REM Write customer_agent_register.py directly from batch file
+REM Write customer_agent_register.py directly from batch file
 echo import requests> "C:\WireGuard\customer_agent_register.py"
 echo import os>> "C:\WireGuard\customer_agent_register.py"
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")>> "C:\WireGuard\customer_agent_register.py"
@@ -104,9 +105,9 @@ echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "C:\WireGuard\customer
 echo payload = {"customer": CUSTOMER}>> "C:\WireGuard\customer_agent_register.py"
 echo try:>> "C:\WireGuard\customer_agent_register.py"
 echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)>> "C:\WireGuard\customer_agent_register.py"
-echo     print("Registration result:", r.text)>> "C:\WireGuard\customer_agent_register.py"
+echo     print(f"Registration result: {r.text}")>> "C:\WireGuard\customer_agent_register.py"
 echo except Exception as e:>> "C:\WireGuard\customer_agent_register.py"
-echo     print("Failed to register agent:", e)>> "C:\WireGuard\customer_agent_register.py"
+echo     print(f"Failed to register agent: {e}")>> "C:\WireGuard\customer_agent_register.py"
 
 REM Run agent registration script automatically
 python C:\WireGuard\customer_agent_register.py
@@ -124,6 +125,7 @@ echo     data = resp.json()>> "C:\WireGuard\fetch_and_install_wg_config.py"
 echo     config_path = data.get("config_path")>> "C:\WireGuard\fetch_and_install_wg_config.py"
 echo     print(f"Config generated at server: {config_path}")>> "C:\WireGuard\fetch_and_install_wg_config.py"
 echo     print("Please implement config download endpoint for full automation.")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo     os.system("sudo wg-quick up wg0")>> "C:\WireGuard\fetch_and_install_wg_config.py"
 echo else:>> "C:\WireGuard\fetch_and_install_wg_config.py"
 echo     print("Failed to fetch config from cloud API.")>> "C:\WireGuard\fetch_and_install_wg_config.py"
 REM Fetch WireGuard config from cloud and install
