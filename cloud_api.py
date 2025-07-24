@@ -16,6 +16,22 @@ async def register_agent(request: Request):
     if not customer or not public_ip:
         return {"status": "error", "message": "Missing customer or public IP"}
     registered_agents[customer] = public_ip
+    # Orchestration: automatically POST WireGuard config to agent
+    import os, requests
+    config_path = os.path.join("configs", f"{customer}.conf")
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            wg_config = f.read()
+        agent_url = f"http://{public_ip}:5000/api/wgconfig"
+        payload = {"config": wg_config, "customer": customer}
+        try:
+            resp = requests.post(agent_url, json=payload, timeout=10)
+            result = resp.text
+        except Exception as e:
+            result = f"Failed to POST config: {e}"
+    else:
+        result = "Config file not found"
+    return {"status": "success", "message": f"Agent registered for {customer}", "ip": public_ip, "config_result": result}
     return {"status": "success", "message": f"Agent registered for {customer}", "ip": public_ip}
 async def report_ips(request: Request):
     data = await request.json()
