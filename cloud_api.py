@@ -24,6 +24,14 @@ Endpoint = <server-endpoint>:51820
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 """
+    config_dir = os.path.join(os.getcwd(), "configs")
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(config_dir, f"{customer}.conf")
+    with open(config_path, "w") as f:
+        f.write(config)
+    return config_path
+
+# API endpoint: Agent reports its IPs to cloud
 @app.post("/report")
 async def report_agent_ip(request: Request):
     data = await request.json()
@@ -33,12 +41,6 @@ async def report_agent_ip(request: Request):
         return {"status": "error", "message": "Missing customer or IPs"}
     registered_agents[customer] = ips
     return {"status": "success", "message": f"IPs received for {customer}", "ips": ips}
-    config_dir = os.path.join(os.getcwd(), "configs")
-    os.makedirs(config_dir, exist_ok=True)
-    config_path = os.path.join(config_dir, f"{customer}.conf")
-    with open(config_path, "w") as f:
-        f.write(config)
-    return config_path
 
 # API endpoint: Generate WireGuard config for customer
 @app.post("/generate_config")
@@ -81,12 +83,7 @@ async def add_peer(request: Request):
     # subprocess.run(["sudo", "wg-quick", "down", "wg0"])
     # subprocess.run(["sudo", "wg-quick", "up", "wg0"])
     return {"status": "success", "message": f"Peer added for {customer}", "public_key": pubkey}
-    customer = data.get("customer")
-    ips = data.get("ips")
-    if not customer or not ips:
-        return {"status": "error", "message": "Missing customer or IPs"}
-    reported_ips[customer] = ips
-    return {"status": "success", "message": f"IPs received for {customer}", "ips": ips}
+    # ...existing code...
 
 @app.get("/ips/{customer}")
 @app.get("/agent/{customer}")
