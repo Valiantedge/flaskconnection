@@ -48,8 +48,10 @@ if exist "C:\Program Files\WireGuard\wireguard.exe" (
 )
 
 REM Set server public key and endpoint (edit these as needed)
-set SERVER_PUBLIC_KEY=REPLACE_WITH_SERVER_PUBLIC_KEY
-set SERVER_ENDPOINT=REPLACE_WITH_SERVER_IP:51820
+
+REM Fetch server public key and endpoint from cloud API
+for /f "delims=" %%i in ('python -c "import requests,os;resp=requests.get(os.environ.get('CLOUD_API_URL','http://13.58.212.239:8000/serverinfo'));j=resp.json();print(j.get('server_public_key',''));"') do set SERVER_PUBLIC_KEY=%%i
+for /f "delims=" %%i in ('python -c "import requests,os;resp=requests.get(os.environ.get('CLOUD_API_URL','http://13.58.212.239:8000/serverinfo'));j=resp.json();print(j.get('server_endpoint',''));"') do set SERVER_ENDPOINT=%%i
 set CLIENT_ADDRESS=10.0.0.2/32
 
 REM Write WireGuard config file
