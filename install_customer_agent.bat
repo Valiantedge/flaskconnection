@@ -16,12 +16,12 @@ if not exist "C:\Program Files\WireGuard\wireguard.exe" (
 
 REM Generate WireGuard keys if not present
 echo --- Directory listing before keygen --- >> "%LOGFILE%"
-dir "C:\Program Files\WireGuard" >> "%LOGFILE%"
+dir "C:\WireGuard" >> "%LOGFILE%"
 set WG_PRIV_KEY=C:\WireGuard\wg_private.key
 set WG_PUB_KEY=C:\WireGuard\wg_public.key
 set WG_CONFIG=C:\WireGuard\wg0.conf
-set WG_EXE=C:\WireGuard\wg.exe
-REM Require wg.exe to be pre-placed in C:\WireGuard
+set WG_EXE=C:\Program Files\WireGuard\wg.exe
+REM Use wg.exe from C:\Program Files\WireGuard
 REM Check for wg.exe before keygen
 if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
