@@ -24,6 +24,15 @@ Endpoint = <server-endpoint>:51820
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 """
+@app.post("/report")
+async def report_agent_ip(request: Request):
+    data = await request.json()
+    customer = data.get("customer")
+    ips = data.get("ips")
+    if not customer or not ips:
+        return {"status": "error", "message": "Missing customer or IPs"}
+    registered_agents[customer] = ips
+    return {"status": "success", "message": f"IPs received for {customer}", "ips": ips}
     config_dir = os.path.join(os.getcwd(), "configs")
     os.makedirs(config_dir, exist_ok=True)
     config_path = os.path.join(config_dir, f"{customer}.conf")
