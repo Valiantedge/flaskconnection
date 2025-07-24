@@ -4,6 +4,12 @@
 REM Ensure C:\WireGuard directory exists before anything else
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 
+REM Silent install WireGuard if not present
+if not exist "C:\Program Files\WireGuard\wireguard.exe" (
+    echo Installing WireGuard...
+    msiexec /i "WireGuardInstaller.msi" /quiet /qn /norestart
+)
+
 REM Generate WireGuard keys if not present
 set WG_PRIV_KEY=C:\WireGuard\wg_private.key
 set WG_PUB_KEY=C:\WireGuard\wg_public.key
