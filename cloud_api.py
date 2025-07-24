@@ -1,3 +1,35 @@
+# API endpoint: Add customer as WireGuard peer to server config
+@app.post("/add_peer")
+async def add_peer(request: Request):
+    data = await request.json()
+    customer = data.get("customer")
+    config_dir = os.path.join(os.getcwd(), "configs")
+    config_path = os.path.join(config_dir, f"{customer}.conf")
+    if not os.path.exists(config_path):
+        return {"status": "error", "message": "Customer config not found"}
+    # Extract public key from customer config
+    pubkey = None
+    with open(config_path, "r") as f:
+        for line in f:
+            if line.strip().startswith("PrivateKey ="):
+                privkey = line.strip().split("=",1)[1].strip()
+                import subprocess
+                pubkey = subprocess.getoutput(f'echo {privkey} | wg pubkey')
+                break
+    if not pubkey:
+        return {"status": "error", "message": "Could not extract public key"}
+    # Append peer to server config
+    server_conf = "/etc/wireguard/wg0.conf"
+    peer_conf = f"\n[Peer]\nPublicKey = {pubkey}\nAllowedIPs = 10.0.0.2/32\n"
+    try:
+        with open(server_conf, "a") as f:
+            f.write(peer_conf)
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to update server config: {e}"}
+    # Optionally restart WireGuard (uncomment if desired)
+    # subprocess.run(["sudo", "wg-quick", "down", "wg0"])
+    # subprocess.run(["sudo", "wg-quick", "up", "wg0"])
+    return {"status": "success", "message": f"Peer added for {customer}", "public_key": pubkey}
 from fastapi import FastAPI, Request
 import os
 import subprocess
