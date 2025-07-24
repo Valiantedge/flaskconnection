@@ -16,28 +16,29 @@ dir "C:\Program Files\WireGuard" >> "%LOGFILE%"
 set WG_PRIV_KEY=C:\WireGuard\wg_private.key
 set WG_PUB_KEY=C:\WireGuard\wg_public.key
 set WG_CONFIG=C:\WireGuard\wg0.conf
+set WG_EXE=C:\WireGuard\wg.exe
 REM Download wg.exe if missing (Windows CLI)
-if not exist "C:\Program Files\WireGuard\wg.exe" (
+if not exist "%WG_EXE%" (
     echo Downloading wg.exe CLI tool...
-    powershell -Command try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile 'C:\Program Files\WireGuard\wg.exe' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }
-    if exist "C:\Program Files\WireGuard\wg.exe" (
+    powershell -Command try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile '%WG_EXE%' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }
+    if exist "%WG_EXE%" (
         echo wg.exe downloaded successfully.>> "%LOGFILE%"
     ) else (
         echo ERROR: Failed to download wg.exe. Key generation will be skipped.>> "%LOGFILE%"
     )
 )
 REM Check for wg.exe before keygen
-if exist "C:\Program Files\WireGuard\wg.exe" (
+if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
         echo Generating WireGuard private key...
-        "C:\Program Files\WireGuard\wg.exe" genkey > "%WG_PRIV_KEY%"
+        "%WG_EXE%" genkey > "%WG_PRIV_KEY%"
         if not exist "%WG_PRIV_KEY%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
         )
         if exist "%WG_PRIV_KEY%" (
             set /p PRIVKEY=<"%WG_PRIV_KEY%"
             echo Private key: %PRIVKEY%>> "%LOGFILE%"
-            echo %PRIVKEY% | "C:\Program Files\WireGuard\wg.exe" pubkey > "%WG_PUB_KEY%"
+            echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
             if not exist "%WG_PUB_KEY%" (
                 echo ERROR: Public key file was not created.>> "%LOGFILE%"
             )
@@ -46,7 +47,7 @@ if exist "C:\Program Files\WireGuard\wg.exe" (
     if exist "%WG_PRIV_KEY%" (
         echo Generating WireGuard public key...
         set /p PRIVKEY=<"%WG_PRIV_KEY%"
-        echo %PRIVKEY% | "C:\Program Files\WireGuard\wg.exe" pubkey > "%WG_PUB_KEY%"
+        echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
     )
     if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
         echo WireGuard keys generated successfully.>> "%LOGFILE%"
@@ -54,7 +55,7 @@ if exist "C:\Program Files\WireGuard\wg.exe" (
         echo ERROR: WireGuard keys not generated.>> "%LOGFILE%"
     )
 ) else (
-    echo ERROR: wg.exe not found in C:\Program Files\WireGuard. Key generation skipped.>> "%LOGFILE%"
+    echo ERROR: wg.exe not found in C:\WireGuard. Key generation skipped.>> "%LOGFILE%"
 )
 
 REM Set script paths
