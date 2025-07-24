@@ -45,6 +45,23 @@ set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
 set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
 set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
 
+REM Write customer_agent_register.py
+echo Writing fetch_and_install_wg_config.py...>> "%LOGFILE%"
+    powershell -Command "[Convert]::ToBase64String((New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes(32))" > "C:\WireGuard\client_private.key"
+if exist "C:\Program Files\WireGuard\wireguard.exe" (
+    set /p CLIENT_PUBLIC_KEY=<"C:\WireGuard\client_public.key"
+REM Set server public key and endpoint (edit these as needed)
+echo Fetching server public key and endpoint from cloud API...>> "%LOGFILE%"
+echo DNS = 8.8.8.8>> "C:\WireGuard\wg0.conf"
+if not "%SERVER_PUBLIC_KEY%"=="" (
+) else (
+REM Write improved customer_agent_api.py with automated IP reporting using absolute path
+
+REM Write all Python agent scripts only once, with correct variable usage
+set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
+set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
+set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
+
 REM Write customer_agent_api.py
 echo Writing customer_agent_api.py...>> "%LOGFILE%"
 echo from fastapi import FastAPI, Request> "%AGENT_SCRIPT_PATH%"
@@ -92,7 +109,7 @@ echo     if not config:>> "%AGENT_SCRIPT_PATH%"
 echo         return {"status": "error", "message": "No config provided"}>> "%AGENT_SCRIPT_PATH%"
 echo     with open(WG_CONFIG_PATH, "w") as f:>> "%AGENT_SCRIPT_PATH%"
 echo         f.write(config)>> "%AGENT_SCRIPT_PATH%"
-echo     os.system(f'"C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "{WG_CONFIG_PATH}"')>> "%AGENT_SCRIPT_PATH%"
+echo     os.system(f'"C:\\Program Files\\WireGuard\\wireguard.exe" /installtunnelservice "{WG_CONFIG_PATH}"')>> "%AGENT_SCRIPT_PATH%"
 echo     local_ips = get_local_ips()>> "%AGENT_SCRIPT_PATH%"
 echo     cloud_api_url = os.environ.get("CLOUD_API_URL")>> "%AGENT_SCRIPT_PATH%"
 echo     if cloud_api_url:>> "%AGENT_SCRIPT_PATH%"
@@ -159,58 +176,16 @@ if exist "%FETCH_SCRIPT_PATH%" (
     echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
 )
 
-echo Generating WireGuard keys if missing...>> "%LOGFILE%"
-if not exist "C:\WireGuard\client_private.key" (
-    powershell -Command "[Convert]::ToBase64String((New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes(32))" > "C:\WireGuard\client_private.key"
-)
-echo Generating WireGuard keys with wireguard.exe if available...>> "%LOGFILE%"
-if exist "C:\Program Files\WireGuard\wireguard.exe" (
-    "C:\Program Files\WireGuard\wireguard.exe" /generateprivkey > "C:\WireGuard\client_private.key"
-    set /p CLIENT_PRIVATE_KEY=<"C:\WireGuard\client_private.key"
-    echo %CLIENT_PRIVATE_KEY% | "C:\Program Files\WireGuard\wireguard.exe" /generatepubkey > "C:\WireGuard\client_public.key"
-    set /p CLIENT_PUBLIC_KEY=<"C:\WireGuard\client_public.key"
-)
+echo Listing all .py files in C:\WireGuard...>> "%LOGFILE%"
+dir /b C:\WireGuard\*.py >> "%LOGFILE%"
 
-REM Set server public key and endpoint (edit these as needed)
+cd /d %~dp0
+echo Installer finished at %DATE% %TIME%. Press any key to exit.>> "%LOGFILE%"
+pause
 
-echo Fetching server public key and endpoint from cloud API...>> "%LOGFILE%"
-for /f "delims=" %%i in ('python -c "import requests,os;resp=requests.get(os.environ.get('CLOUD_API_URL','http://13.58.212.239:8000/serverinfo'));j=resp.json();print(j.get('server_public_key',''));"') do set SERVER_PUBLIC_KEY=%%i
-for /f "delims=" %%i in ('python -c "import requests,os;resp=requests.get(os.environ.get('CLOUD_API_URL','http://13.58.212.239:8000/serverinfo'));j=resp.json();print(j.get('server_endpoint',''));"') do set SERVER_ENDPOINT=%%i
-set CLIENT_ADDRESS=10.0.0.2/32
+REM Create startup task to run agent on boot
+schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python C:\WireGuard\customer_agent_api.py" /RL HIGHEST
 
-echo Writing WireGuard config file...>> "%LOGFILE%"
-echo [Interface]> "C:\WireGuard\wg0.conf"
-if not "%CLIENT_PRIVATE_KEY%"=="" (
-    echo PrivateKey = %CLIENT_PRIVATE_KEY%>> "C:\WireGuard\wg0.conf"
-) else (
-    echo ERROR: PrivateKey is missing!>> "C:\WireGuard\wg0.conf"
-)
-echo Address = %CLIENT_ADDRESS%>> "C:\WireGuard\wg0.conf"
-echo DNS = 8.8.8.8>> "C:\WireGuard\wg0.conf"
-echo.>> "C:\WireGuard\wg0.conf"
-echo [Peer]>> "C:\WireGuard\wg0.conf"
-if not "%SERVER_PUBLIC_KEY%"=="" (
-    echo PublicKey = %SERVER_PUBLIC_KEY%>> "C:\WireGuard\wg0.conf"
-) else (
-    echo ERROR: PublicKey is missing!>> "C:\WireGuard\wg0.conf"
-)
-if not "%SERVER_ENDPOINT%"=="" (
-    echo Endpoint = %SERVER_ENDPOINT%>> "C:\WireGuard\wg0.conf"
-) else (
-    echo ERROR: Endpoint is missing!>> "C:\WireGuard\wg0.conf"
-)
-echo AllowedIPs = 0.0.0.0/0>> "C:\WireGuard\wg0.conf"
-echo PersistentKeepalive = 25>> "C:\WireGuard\wg0.conf"
-echo Activating WireGuard tunnel...>> "%LOGFILE%"
-"C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "C:\WireGuard\wg0.conf"
-
-
-echo Writing Python agent scripts...>> "%LOGFILE%"
-if not exist "C:\WireGuard" mkdir "C:\WireGuard"
-
-REM Write improved customer_agent_api.py with automated IP reporting using absolute path
-set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
-echo Writing customer_agent_api.py...>> "%LOGFILE%"
 echo from fastapi import FastAPI, Request> "%AGENT_SCRIPT_PATH%"
 echo import os>> "%AGENT_SCRIPT_PATH%"
 echo import socket>> "%AGENT_SCRIPT_PATH%"
