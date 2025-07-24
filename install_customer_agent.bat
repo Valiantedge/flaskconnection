@@ -21,10 +21,13 @@ if not exist "%WG_PRIV_KEY%" (
     "C:\Program Files\WireGuard\wg.exe" genkey > "%WG_PRIV_KEY%"
     if not exist "%WG_PRIV_KEY%" (
         echo ERROR: Private key file was not created.>> "%LOGFILE%"
-    ) else (
-        findstr /R /C:"^[A-Za-z0-9+/=]\{44\}$" "%WG_PRIV_KEY%" >nul
-        if errorlevel 1 (
-            echo ERROR: Private key file is not valid.>> "%LOGFILE%"
+    )
+    if exist "%WG_PRIV_KEY%" (
+        set /p PRIVKEY=<"%WG_PRIV_KEY%"
+        echo Private key: %PRIVKEY%>> "%LOGFILE%"
+        echo %PRIVKEY% | "C:\Program Files\WireGuard\wg.exe" pubkey > "%WG_PUB_KEY%"
+        if not exist "%WG_PUB_KEY%" (
+            echo ERROR: Public key file was not created.>> "%LOGFILE%"
         )
     )
 )
