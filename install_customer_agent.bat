@@ -372,5 +372,5 @@ echo     print("Failed to fetch config from cloud API.")>> "C:\WireGuard\fetch_a
 REM Fetch WireGuard config from cloud and install
 python C:\WireGuard\fetch_and_install_wg_config.py
 
-REM Start agent in a new window for immediate testing
-start "" python C:\WireGuard\customer_agent_api.py
+REM Start agent in a new window for immediate testing (window stays open)
+start cmd /k python C:\WireGuard\customer_agent_api.py
