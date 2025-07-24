@@ -22,22 +22,23 @@ async def run_agent():
         print("Connected to server.")
         # First message should be SSH details as JSON (can be ignored for local execution)
         ssh_details_msg = await websocket.recv()
-        print("Received initial message (ignored for script mode):", ssh_details_msg)
+        print(f"Received initial message (ignored for script mode): {ssh_details_msg}")
         while True:
-            # Wait for script payload from server
-            msg = await websocket.recv()
             try:
+                msg = await websocket.recv()
                 payload = json.loads(msg)
                 script_content = payload["script_content"]
                 script_name = payload.get("script_name", "remote_script.sh")
                 exec_cmd = payload.get("exec_cmd", "bash")
-            except Exception as e:
-                output = f"Error parsing script payload: {e}"
+                print(f"Received script to execute: {script_name}")
+                output = save_and_execute_script(script_content, script_name, exec_cmd)
+                print("Script output:")
+                print(output)
                 await websocket.send(output)
-                continue
-            print(f"Received script to execute: {script_name}")
-            output = save_and_execute_script(script_content, script_name, exec_cmd)
-            await websocket.send(output)
+            except Exception as e:
+                error_msg = f"Agent error: {e}"
+                print(error_msg)
+                await websocket.send(error_msg)
             print("Script output:")
             print(output)
 
