@@ -19,7 +19,7 @@ set WG_CONFIG=C:\WireGuard\wg0.conf
 REM Download wg.exe if missing (Windows CLI)
 if not exist "C:\Program Files\WireGuard\wg.exe" (
     echo Downloading wg.exe CLI tool...
-    powershell -Command "try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile 'C:\Program Files\WireGuard\wg.exe' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }"
+    powershell -Command try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile 'C:\Program Files\WireGuard\wg.exe' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }
     if exist "C:\Program Files\WireGuard\wg.exe" (
         echo wg.exe downloaded successfully.>> "%LOGFILE%"
     ) else (
