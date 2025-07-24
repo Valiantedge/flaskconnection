@@ -4,6 +4,10 @@
 REM Ensure C:\WireGuard directory exists before anything else
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 
+REM Create log file immediately for diagnostics
+set LOGFILE=C:\WireGuard\agent_install.log
+echo --- Agent install started at %DATE% %TIME% --- > "%LOGFILE%"
+
 REM Silent install WireGuard if not present
 if not exist "C:\Program Files\WireGuard\wireguard.exe" (
     echo Installing WireGuard...
@@ -17,25 +21,7 @@ set WG_PRIV_KEY=C:\WireGuard\wg_private.key
 set WG_PUB_KEY=C:\WireGuard\wg_public.key
 set WG_CONFIG=C:\WireGuard\wg0.conf
 set WG_EXE=C:\WireGuard\wg.exe
-REM Download wg.exe if missing (Windows CLI)
-if not exist "%WG_EXE%" (
-    echo Downloading wg.exe CLI tool...
-    if exist "%SystemRoot%\System32\curl.exe" (
-        "%SystemRoot%\System32\curl.exe" -L -o "%WG_EXE%" "https://download.wireguard.com/windows-client/wg.exe"
-    ) else (
-        powershell -Command try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile '%WG_EXE%' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }
-    )
-    REM Validate wg.exe size (should be >100KB)
-    for %%F in ("%WG_EXE%") do set WGEXESIZE=%%~zF
-    if not exist "%WG_EXE%" (
-        echo ERROR: Failed to download wg.exe. Key generation will be skipped.>> "%LOGFILE%"
-    ) else if %WGEXESIZE% LSS 100000 (
-        echo ERROR: Downloaded wg.exe is too small (%WGEXESIZE% bytes). Likely corrupt. Key generation will be skipped.>> "%LOGFILE%"
-        del "%WG_EXE%"
-    ) else (
-        echo wg.exe downloaded successfully (%WGEXESIZE% bytes).>> "%LOGFILE%"
-    )
-)
+REM Require wg.exe to be pre-placed in C:\WireGuard
 REM Check for wg.exe before keygen
 if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
