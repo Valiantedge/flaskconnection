@@ -19,6 +19,14 @@ set WG_CONFIG=C:\WireGuard\wg0.conf
 if not exist "%WG_PRIV_KEY%" (
     echo Generating WireGuard private key...
     "C:\Program Files\WireGuard\wg.exe" genkey > "%WG_PRIV_KEY%"
+    if not exist "%WG_PRIV_KEY%" (
+        echo ERROR: Private key file was not created.>> "%LOGFILE%"
+    ) else (
+        findstr /R /C:"^[A-Za-z0-9+/=]\{44\}$" "%WG_PRIV_KEY%" >nul
+        if errorlevel 1 (
+            echo ERROR: Private key file is not valid.>> "%LOGFILE%"
+        )
+    )
 )
 if exist "%WG_PRIV_KEY%" (
     echo Generating WireGuard public key...
