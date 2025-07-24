@@ -2,15 +2,22 @@
 """
 WebSocket server for cloud automation. Accepts agent connections and can trigger Ansible tasks.
 """
-from fastapi import FastAPI, WebSocket, Request
+from fastapi import FastAPI, WebSocket
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 import uvicorn
 import subprocess
 import json
 import asyncio
 
+
 app = FastAPI()
 agents = set()
+
+class PlaybookRequest(BaseModel):
+    inventory: str = "inventory.ini"
+    playbook: str = "playbooks/your_playbook.yml"
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -28,10 +35,9 @@ async def websocket_endpoint(websocket: WebSocket):
         agents.discard(websocket)
 
 @app.post("/run-playbook")
-async def run_playbook(request: Request):
-    data = await request.json()
-    inventory = data.get("inventory", "inventory.ini")
-    playbook = data.get("playbook", "playbooks/your_playbook.yml")
+async def run_playbook(body: PlaybookRequest):
+    inventory = body.inventory
+    playbook = body.playbook
     cmd = ["ansible-playbook", "-i", inventory, playbook]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
