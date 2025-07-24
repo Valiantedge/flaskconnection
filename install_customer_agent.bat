@@ -1,7 +1,26 @@
 @echo off
 
+
 REM Ensure C:\WireGuard directory exists before anything else
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
+
+REM Generate WireGuard keys if not present
+set WG_PRIV_KEY=C:\WireGuard\wg_private.key
+set WG_PUB_KEY=C:\WireGuard\wg_public.key
+set WG_CONFIG=C:\WireGuard\wg0.conf
+if not exist "%WG_PRIV_KEY%" (
+    echo Generating WireGuard private key...
+    "C:\Program Files\WireGuard\wg.exe" genkey > "%WG_PRIV_KEY%"
+)
+if exist "%WG_PRIV_KEY%" (
+    echo Generating WireGuard public key...
+    type "%WG_PRIV_KEY%" | "C:\Program Files\WireGuard\wg.exe" pubkey > "%WG_PUB_KEY%"
+)
+if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
+    echo WireGuard keys generated successfully.>> "%LOGFILE%"
+) else (
+    echo ERROR: WireGuard keys not generated.>> "%LOGFILE%"
+)
 
 REM Set script paths
 set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
@@ -30,9 +49,9 @@ if exist "%REGISTER_SCRIPT_PATH%" (
     echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
 )
 
+
 REM Write fetch_and_install_wg_config.py
 call :write_fetch_script > "%FETCH_SCRIPT_PATH%"
-echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
 echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
 if exist "%FETCH_SCRIPT_PATH%" (
     echo fetch_and_install_wg_config.py created successfully in C:\WireGuard>> "%LOGFILE%"
@@ -41,11 +60,47 @@ if exist "%FETCH_SCRIPT_PATH%" (
 )
 
 
+REM Fetch server public key and endpoint from API
+set SERVER_API_URL=http://13.58.212.239:8000/get_server_info
+for /f "tokens=*" %%A in ('curl -s %SERVER_API_URL%') do set SERVER_INFO=%%A
+for /f "tokens=1,2 delims=," %%a in ("%SERVER_INFO%") do (
+    set SERVER_PUB_KEY=%%a
+    set SERVER_ENDPOINT=%%b
+)
+
+REM Create local WireGuard config file (fully automated)
+if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
+    set /p PRIVKEY=<"%WG_PRIV_KEY%"
+    echo [Interface] > "%WG_CONFIG%"
+    echo PrivateKey = %PRIVKEY% >> "%WG_CONFIG%"
+    echo Address = 10.0.0.2/32 >> "%WG_CONFIG%"
+    echo DNS = 1.1.1.1 >> "%WG_CONFIG%"
+    echo >> "%WG_CONFIG%"
+    echo [Peer] >> "%WG_CONFIG%"
+    echo PublicKey = %SERVER_PUB_KEY% >> "%WG_CONFIG%"
+    echo Endpoint = %SERVER_ENDPOINT% >> "%WG_CONFIG%"
+    echo AllowedIPs = 0.0.0.0/0 >> "%WG_CONFIG%"
+    echo PersistentKeepalive = 25 >> "%WG_CONFIG%"
+    echo WireGuard config file created at %WG_CONFIG%>> "%LOGFILE%"
+) else (
+    echo ERROR: WireGuard config not created due to missing keys.>> "%LOGFILE%"
+)
+
+
 REM Run agent registration script automatically
 python "%REGISTER_SCRIPT_PATH%"
 
+
 REM Fetch WireGuard config from cloud and install
 python "%FETCH_SCRIPT_PATH%"
+
+REM Start WireGuard tunnel in Windows
+if exist "%WG_CONFIG%" if exist "C:\Program Files\WireGuard\wireguard.exe" (
+    "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "%WG_CONFIG%"
+    echo WireGuard tunnel started using wireguard.exe>> "%LOGFILE%"
+) else (
+    echo ERROR: WireGuard config or executable missing.>> "%LOGFILE%"
+)
 
 REM Start agent in a new window for immediate testing (window always stays open)
 start "" cmd /k "python %AGENT_SCRIPT_PATH% & pause"
