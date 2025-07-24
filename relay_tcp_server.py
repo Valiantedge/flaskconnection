@@ -27,6 +27,7 @@ def handle_client(client_sock):
 
 def main():
     s = socket.socket()
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(('', LISTEN_PORT))
     s.listen(1)
     print(f"Listening on port {LISTEN_PORT}...")
