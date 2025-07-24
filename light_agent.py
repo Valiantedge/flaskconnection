@@ -7,7 +7,7 @@ import websockets
 import json
 
 async def run_agent():
-    uri = "ws://<CLOUD_SERVER_IP>:8765/ws"  # Replace with your cloud server IP
+    uri = "ws://13.58.212.239:8765/ws"  # Replace with your cloud server IP
     async with websockets.connect(uri) as websocket:
         print("Connected to cloud server.")
         while True:
