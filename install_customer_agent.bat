@@ -111,5 +111,23 @@ echo     print("Failed to register agent:", e)>> "C:\WireGuard\customer_agent_re
 REM Run agent registration script automatically
 python C:\WireGuard\customer_agent_register.py
 
+REM Write fetch_and_install_wg_config.py directly from batch file
+
+echo import os> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo import requests>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf" >> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo if resp.status_code == 200:>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo     data = resp.json()>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo     config_path = data.get("config_path")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo     print(f"Config generated at server: {config_path}")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo     print("Please implement config download endpoint for full automation.")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo else:>> "C:\WireGuard\fetch_and_install_wg_config.py"
+echo     print("Failed to fetch config from cloud API.")>> "C:\WireGuard\fetch_and_install_wg_config.py"
+REM Fetch WireGuard config from cloud and install
+python C:\WireGuard\fetch_and_install_wg_config.py
+
 REM Start agent in a new window for immediate testing
 start "" python C:\WireGuard\customer_agent_api.py
