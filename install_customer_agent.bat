@@ -10,7 +10,53 @@ set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
 set LOGFILE=C:\WireGuard\agent_install.log
 
 REM Write customer_agent_api.py
-(
+call :write_agent_script > "%AGENT_SCRIPT_PATH%"
+echo Finished writing customer_agent_api.py>> "%LOGFILE%"
+echo Finished writing customer_agent_api.py>> "%LOGFILE%"
+if exist "%AGENT_SCRIPT_PATH%" (
+    echo customer_agent_api.py created successfully in C:\WireGuard>> "%LOGFILE%"
+) else (
+    echo ERROR: customer_agent_api.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
+)
+
+REM Write customer_agent_register.py
+call :write_register_script > "%REGISTER_SCRIPT_PATH%"
+echo Finished writing customer_agent_register.py>> "%LOGFILE%"
+echo Finished writing customer_agent_register.py>> "%LOGFILE%"
+if exist "%REGISTER_SCRIPT_PATH%" (
+    echo customer_agent_register.py created successfully in C:\WireGuard>> "%LOGFILE%"
+) else (
+    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
+)
+
+REM Write fetch_and_install_wg_config.py
+call :write_fetch_script > "%FETCH_SCRIPT_PATH%"
+echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
+echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
+if exist "%FETCH_SCRIPT_PATH%" (
+    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard>> "%LOGFILE%"
+) else (
+    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
+)
+
+
+REM Run agent registration script automatically
+python "%REGISTER_SCRIPT_PATH%"
+
+REM Fetch WireGuard config from cloud and install
+python "%FETCH_SCRIPT_PATH%"
+
+REM Start agent in a new window for immediate testing (window always stays open)
+start "" cmd /k "python %AGENT_SCRIPT_PATH% & pause"
+
+echo Customer agent installed and set to run at startup. No manual steps required.
+
+REM Create startup task to run agent on boot
+schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python %AGENT_SCRIPT_PATH%" /RL HIGHEST
+
+goto :eof
+
+:write_agent_script
 echo from fastapi import FastAPI, Request
 echo import os
 echo import socket
@@ -74,16 +120,9 @@ echo     print(f"[Agent Startup] Reporting IPs: {local_ips} for customer: {custo
 echo     report_ips_to_cloud(cloud_api_url, customer, local_ips)
 echo     import uvicorn
 echo     uvicorn.run(app, host="0.0.0.0", port=5000)
-) > "%AGENT_SCRIPT_PATH%"
-echo Finished writing customer_agent_api.py>> "%LOGFILE%"
-if exist "%AGENT_SCRIPT_PATH%" (
-    echo customer_agent_api.py created successfully in C:\WireGuard>> "%LOGFILE%"
-) else (
-    echo ERROR: customer_agent_api.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
-)
+goto :eof
 
-REM Write customer_agent_register.py
-(
+:write_register_script
 echo import requests, os
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")
 echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")
@@ -93,16 +132,9 @@ echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)
 echo     print(f"Registration result: {r.text}")
 echo except Exception as e:
 echo     print(f"Failed to register agent: {e}")
-) > "%REGISTER_SCRIPT_PATH%"
-echo Finished writing customer_agent_register.py>> "%LOGFILE%"
-if exist "%REGISTER_SCRIPT_PATH%" (
-    echo customer_agent_register.py created successfully in C:\WireGuard>> "%LOGFILE%"
-) else (
-    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
-)
+goto :eof
 
-REM Write fetch_and_install_wg_config.py
-(
+:write_fetch_script
 echo import os, requests
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")
 echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")
@@ -116,25 +148,5 @@ echo     print("Please implement config download endpoint for full automation.")
 echo     os.system("sudo wg-quick up wg0")
 echo else:
 echo     print("Failed to fetch config from cloud API.")
-) > "%FETCH_SCRIPT_PATH%"
-echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
-if exist "%FETCH_SCRIPT_PATH%" (
-    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard>> "%LOGFILE%"
-) else (
-    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
-)
-
-REM Run agent registration script automatically
-python "%REGISTER_SCRIPT_PATH%"
-
-REM Fetch WireGuard config from cloud and install
-python "%FETCH_SCRIPT_PATH%"
-
-REM Start agent in a new window for immediate testing (window always stays open)
-start "" cmd /k "python %AGENT_SCRIPT_PATH% & pause"
-
-echo Customer agent installed and set to run at startup. No manual steps required.
-
-REM Create startup task to run agent on boot
-schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python %AGENT_SCRIPT_PATH%" /RL HIGHEST
+goto :eof
 
