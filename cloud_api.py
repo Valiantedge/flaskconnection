@@ -1,10 +1,45 @@
 from fastapi import FastAPI, Request
+import os
+import subprocess
 
 app = FastAPI()
+
 
 # Store reported IPs in memory (for demo; use DB in production)
 reported_ips = {}
 registered_agents = {}
+
+# Utility: Generate WireGuard config (demo keys/IPs)
+def generate_wg_config(customer):
+    private_key = subprocess.getoutput('wg genkey')
+    public_key = subprocess.getoutput(f'echo {private_key} | wg pubkey')
+    config = f"""[Interface]
+PrivateKey = {private_key}
+Address = 10.0.0.2/32
+DNS = 8.8.8.8
+
+[Peer]
+PublicKey = <server-public-key>
+Endpoint = <server-endpoint>:51820
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+"""
+    config_dir = os.path.join(os.getcwd(), "configs")
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(config_dir, f"{customer}.conf")
+    with open(config_path, "w") as f:
+        f.write(config)
+    return config_path
+
+# API endpoint: Generate WireGuard config for customer
+@app.post("/generate_config")
+async def api_generate_config(request: Request):
+    data = await request.json()
+    customer = data.get("customer")
+    if not customer:
+        return {"status": "error", "message": "Missing customer name"}
+    config_path = generate_wg_config(customer)
+    return {"status": "success", "message": f"Config generated for {customer}", "config_path": config_path}
 
 @app.post("/report")
 @app.post("/register")
