@@ -80,69 +80,71 @@ echo PersistentKeepalive = 25>> "C:\WireGuard\wg0.conf"
 REM Activate WireGuard tunnel automatically
 "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "C:\WireGuard\wg0.conf"
 REM Write improved customer_agent_api.py with automated IP reporting
-echo from fastapi import FastAPI, Request> "C:\WireGuard\customer_agent_api.py"
-echo import os>> "C:\WireGuard\customer_agent_api.py"
-echo import socket>> "C:\WireGuard\customer_agent_api.py"
-echo import requests>> "C:\WireGuard\customer_agent_api.py"
-echo def get_local_ips():>> "C:\WireGuard\customer_agent_api.py"
-echo     ips = []>> "C:\WireGuard\customer_agent_api.py"
-echo     hostname = socket.gethostname()>> "C:\WireGuard\customer_agent_api.py"
-echo     try:>> "C:\WireGuard\customer_agent_api.py"
-echo         for ip in socket.gethostbyname_ex(hostname)[2]:>> "C:\WireGuard\customer_agent_api.py"
-echo             if not ip.startswith("127."):>> "C:\WireGuard\customer_agent_api.py"
-echo                 ips.append(ip)>> "C:\WireGuard\customer_agent_api.py"
-echo     except Exception:>> "C:\WireGuard\customer_agent_api.py"
-echo         pass>> "C:\WireGuard\customer_agent_api.py"
-echo     try:>> "C:\WireGuard\customer_agent_api.py"
-echo         import psutil>> "C:\WireGuard\customer_agent_api.py"
-echo         for iface, addrs in psutil.net_if_addrs().items():>> "C:\WireGuard\customer_agent_api.py"
-echo             for addr in addrs:>> "C:\WireGuard\customer_agent_api.py"
-echo                 if addr.family == socket.AF_INET and not addr.address.startswith("127."):>> "C:\WireGuard\customer_agent_api.py"
-echo                     if addr.address not in ips:>> "C:\WireGuard\customer_agent_api.py"
-echo                         ips.append(addr.address)>> "C:\WireGuard\customer_agent_api.py"
-echo     except ImportError:>> "C:\WireGuard\customer_agent_api.py"
-echo         pass>> "C:\WireGuard\customer_agent_api.py"
-echo     return ips>> "C:\WireGuard\customer_agent_api.py"
-echo.>> "C:\WireGuard\customer_agent_api.py"
-echo def report_ips_to_cloud(cloud_api_url, customer, ips):>> "C:\WireGuard\customer_agent_api.py"
-echo     try:>> "C:\WireGuard\customer_agent_api.py"
-echo         resp = requests.post(cloud_api_url, json={"customer": customer, "ips": ips}, timeout=10)>> "C:\WireGuard\customer_agent_api.py"
-echo         print(f"Reporting IPs to cloud: {ips} for customer: {customer}")>> "C:\WireGuard\customer_agent_api.py"
-echo         print(f"Cloud API response: {resp.status_code} {resp.text}")>> "C:\WireGuard\customer_agent_api.py"
-echo     except Exception as e:>> "C:\WireGuard\customer_agent_api.py"
-echo         print(f"Failed to report IPs to cloud: {e}")>> "C:\WireGuard\customer_agent_api.py"
-echo.>> "C:\WireGuard\customer_agent_api.py"
-echo app = FastAPI()>> "C:\WireGuard\customer_agent_api.py"
-echo.>> "C:\WireGuard\customer_agent_api.py"
-echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf"  # Change path as needed for Windows>> "C:\WireGuard\customer_agent_api.py"
-echo.>> "C:\WireGuard\customer_agent_api.py"
-echo @app.post("/api/wgconfig")>> "C:\WireGuard\customer_agent_api.py"
-echo async def receive_wg_config(request: Request):>> "C:\WireGuard\customer_agent_api.py"
-echo     data = await request.json()>> "C:\WireGuard\customer_agent_api.py"
-echo     config = data.get("config")>> "C:\WireGuard\customer_agent_api.py"
-echo     customer = data.get("customer")>> "C:\WireGuard\customer_agent_api.py"
-echo     if not config:>> "C:\WireGuard\customer_agent_api.py"
-echo         return {"status": "error", "message": "No config provided"}>> "C:\WireGuard\customer_agent_api.py"
-echo     with open(WG_CONFIG_PATH, "w") as f:>> "C:\WireGuard\customer_agent_api.py"
-echo         f.write(config)>> "C:\WireGuard\customer_agent_api.py"
-echo     os.system(f'"C:\\Program Files\\WireGuard\\wireguard.exe" /installtunnelservice "{WG_CONFIG_PATH}"')>> "C:\WireGuard\customer_agent_api.py"
-echo     local_ips = get_local_ips()>> "C:\WireGuard\customer_agent_api.py"
-echo     cloud_api_url = os.environ.get("CLOUD_API_URL")>> "C:\WireGuard\customer_agent_api.py"
-echo     if cloud_api_url:>> "C:\WireGuard\customer_agent_api.py"
-echo         try:>> "C:\WireGuard\customer_agent_api.py"
-echo             report_ips_to_cloud(cloud_api_url, customer, local_ips)>> "C:\WireGuard\customer_agent_api.py"
-echo         except Exception as e:>> "C:\WireGuard\customer_agent_api.py"
-echo             return {"status": "partial", "message": f"Config applied, but failed to report IPs: {e}"}>> "C:\WireGuard\customer_agent_api.py"
-echo     return {"status": "success", "message": f"Config applied for {customer}", "ips": local_ips}>> "C:\WireGuard\customer_agent_api.py"
-echo.>> "C:\WireGuard\customer_agent_api.py"
-echo if __name__ == "__main__":>> "C:\WireGuard\customer_agent_api.py"
-echo     customer = os.environ.get("CUSTOMER", "customer1")>> "C:\WireGuard\customer_agent_api.py"
-echo     cloud_api_url = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/report")>> "C:\WireGuard\customer_agent_api.py"
-echo     local_ips = get_local_ips()>> "C:\WireGuard\customer_agent_api.py"
-echo     print(f"[Agent Startup] Reporting IPs: {local_ips} for customer: {customer}")>> "C:\WireGuard\customer_agent_api.py"
-echo     report_ips_to_cloud(cloud_api_url, customer, local_ips)>> "C:\WireGuard\customer_agent_api.py"
-echo     import uvicorn>> "C:\WireGuard\customer_agent_api.py"
-echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "C:\WireGuard\customer_agent_api.py"
+cd /d C:\WireGuard
+echo from fastapi import FastAPI, Request> customer_agent_api.py
+echo import os>> customer_agent_api.py
+echo import socket>> customer_agent_api.py
+echo import requests>> customer_agent_api.py
+echo def get_local_ips():>> customer_agent_api.py
+echo     ips = []>> customer_agent_api.py
+echo     hostname = socket.gethostname()>> customer_agent_api.py
+echo     try:>> customer_agent_api.py
+echo         for ip in socket.gethostbyname_ex(hostname)[2]:>> customer_agent_api.py
+echo             if not ip.startswith("127."):>> customer_agent_api.py
+echo                 ips.append(ip)>> customer_agent_api.py
+echo     except Exception:>> customer_agent_api.py
+echo         pass>> customer_agent_api.py
+echo     try:>> customer_agent_api.py
+echo         import psutil>> customer_agent_api.py
+echo         for iface, addrs in psutil.net_if_addrs().items():>> customer_agent_api.py
+echo             for addr in addrs:>> customer_agent_api.py
+echo                 if addr.family == socket.AF_INET and not addr.address.startswith("127."):>> customer_agent_api.py
+echo                     if addr.address not in ips:>> customer_agent_api.py
+echo                         ips.append(addr.address)>> customer_agent_api.py
+echo     except ImportError:>> customer_agent_api.py
+echo         pass>> customer_agent_api.py
+echo     return ips>> customer_agent_api.py
+echo.>> customer_agent_api.py
+echo def report_ips_to_cloud(cloud_api_url, customer, ips):>> customer_agent_api.py
+echo     try:>> customer_agent_api.py
+echo         resp = requests.post(cloud_api_url, json={"customer": customer, "ips": ips}, timeout=10)>> customer_agent_api.py
+echo         print(f"Reporting IPs to cloud: {ips} for customer: {customer}")>> customer_agent_api.py
+echo         print(f"Cloud API response: {resp.status_code} {resp.text}")>> customer_agent_api.py
+echo     except Exception as e:>> customer_agent_api.py
+echo         print(f"Failed to report IPs to cloud: {e}")>> customer_agent_api.py
+echo.>> customer_agent_api.py
+echo app = FastAPI()>> customer_agent_api.py
+echo.>> customer_agent_api.py
+echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf"  # Change path as needed for Windows>> customer_agent_api.py
+echo.>> customer_agent_api.py
+echo @app.post("/api/wgconfig")>> customer_agent_api.py
+echo async def receive_wg_config(request: Request):>> customer_agent_api.py
+echo     data = await request.json()>> customer_agent_api.py
+echo     config = data.get("config")>> customer_agent_api.py
+echo     customer = data.get("customer")>> customer_agent_api.py
+echo     if not config:>> customer_agent_api.py
+echo         return {"status": "error", "message": "No config provided"}>> customer_agent_api.py
+echo     with open(WG_CONFIG_PATH, "w") as f:>> customer_agent_api.py
+echo         f.write(config)>> customer_agent_api.py
+echo     os.system(f'"C:\\Program Files\\WireGuard\\wireguard.exe" /installtunnelservice "{WG_CONFIG_PATH}"')>> customer_agent_api.py
+echo     local_ips = get_local_ips()>> customer_agent_api.py
+echo     cloud_api_url = os.environ.get("CLOUD_API_URL")>> customer_agent_api.py
+echo     if cloud_api_url:>> customer_agent_api.py
+echo         try:>> customer_agent_api.py
+echo             report_ips_to_cloud(cloud_api_url, customer, local_ips)>> customer_agent_api.py
+echo         except Exception as e:>> customer_agent_api.py
+echo             return {"status": "partial", "message": f"Config applied, but failed to report IPs: {e}"}>> customer_agent_api.py
+echo     return {"status": "success", "message": f"Config applied for {customer}", "ips": local_ips}>> customer_agent_api.py
+echo.>> customer_agent_api.py
+echo if __name__ == "__main__":>> customer_agent_api.py
+echo     customer = os.environ.get("CUSTOMER", "customer1")>> customer_agent_api.py
+echo     cloud_api_url = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/report")>> customer_agent_api.py
+echo     local_ips = get_local_ips()>> customer_agent_api.py
+echo     print(f"[Agent Startup] Reporting IPs: {local_ips} for customer: {customer}")>> customer_agent_api.py
+echo     report_ips_to_cloud(cloud_api_url, customer, local_ips)>> customer_agent_api.py
+echo     import uvicorn>> customer_agent_api.py
+echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> customer_agent_api.py
+cd /d %~dp0
 
 REM Create startup task to run agent on boot
 schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python C:\WireGuard\customer_agent_api.py" /RL HIGHEST
