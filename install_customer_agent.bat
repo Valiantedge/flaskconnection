@@ -1,0 +1,97 @@
+@echo off
+REM Silent installer for customer agent
+REM Edit these values as needed
+set CLOUD_API_URL=https://your-cloud-api.example.com/report
+set CUSTOMER=customer1
+
+REM Set environment variables system-wide
+setx CLOUD_API_URL "%CLOUD_API_URL%" /M
+setx CUSTOMER "%CUSTOMER%" /M
+
+REM Install Python if missing
+where python >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Installing Python...
+    powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe' -OutFile '%TEMP%\python-installer.exe'"
+    start /wait %TEMP%\python-installer.exe /quiet InstallAllUsers=1 PrependPath=1
+    del %TEMP%\python-installer.exe
+)
+
+REM Install required Python packages
+python -m pip install --upgrade pip
+python -m pip install fastapi uvicorn psutil requests
+
+REM Install WireGuard if missing
+if not exist "C:\Program Files\WireGuard\wireguard.exe" (
+    echo Installing WireGuard...
+    powershell -Command "Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wireguard-installer.exe' -OutFile '%TEMP%\wireguard-installer.exe'"
+    start /wait %TEMP%\wireguard-installer.exe /install /quiet
+    del %TEMP%\wireguard-installer.exe
+)
+
+REM Copy agent script to C:\WireGuard
+if not exist "C:\WireGuard" mkdir "C:\WireGuard"
+REM Write customer_agent_api.py directly from batch file
+echo from fastapi import FastAPI, Request> "C:\WireGuard\customer_agent_api.py"
+echo import os>> "C:\WireGuard\customer_agent_api.py"
+echo import socket>> "C:\WireGuard\customer_agent_api.py"
+echo import requests>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo app = FastAPI()>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf"  # Change path as needed for Windows>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo @app.post("/api/wgconfig")>> "C:\WireGuard\customer_agent_api.py"
+echo async def receive_wg_config(request: Request):>> "C:\WireGuard\customer_agent_api.py"
+echo     data = await request.json()>> "C:\WireGuard\customer_agent_api.py"
+echo     config = data.get("config")>> "C:\WireGuard\customer_agent_api.py"
+echo     customer = data.get("customer")>> "C:\WireGuard\customer_agent_api.py"
+echo     if not config:>> "C:\WireGuard\customer_agent_api.py"
+echo         return {"status": "error", "message": "No config provided"}>> "C:\WireGuard\customer_agent_api.py"
+echo     with open(WG_CONFIG_PATH, "w") as f:>> "C:\WireGuard\customer_agent_api.py"
+echo         f.write(config)>> "C:\WireGuard\customer_agent_api.py"
+echo     os.system(f'"C:\\Program Files\\WireGuard\\wireguard.exe" /installtunnelservice "{WG_CONFIG_PATH}"')>> "C:\WireGuard\customer_agent_api.py"
+echo     local_ips = get_local_ips()>> "C:\WireGuard\customer_agent_api.py"
+echo     cloud_api_url = os.environ.get("CLOUD_API_URL")>> "C:\WireGuard\customer_agent_api.py"
+echo     if cloud_api_url:>> "C:\WireGuard\customer_agent_api.py"
+echo         try:>> "C:\WireGuard\customer_agent_api.py"
+echo             report_ips_to_cloud(cloud_api_url, customer, local_ips)>> "C:\WireGuard\customer_agent_api.py"
+echo         except Exception as e:>> "C:\WireGuard\customer_agent_api.py"
+echo             return {"status": "partial", "message": f"Config applied, but failed to report IPs: {e}"}>> "C:\WireGuard\customer_agent_api.py"
+echo     return {"status": "success", "message": f"Config applied for {customer}", "ips": local_ips}>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo if __name__ == "__main__":>> "C:\WireGuard\customer_agent_api.py"
+echo     import uvicorn>> "C:\WireGuard\customer_agent_api.py"
+echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo def get_local_ips():>> "C:\WireGuard\customer_agent_api.py"
+echo     ips = []>> "C:\WireGuard\customer_agent_api.py"
+echo     hostname = socket.gethostname()>> "C:\WireGuard\customer_agent_api.py"
+echo     try:>> "C:\WireGuard\customer_agent_api.py"
+echo         for ip in socket.gethostbyname_ex(hostname)[2]:>> "C:\WireGuard\customer_agent_api.py"
+echo             if not ip.startswith("127."):>> "C:\WireGuard\customer_agent_api.py"
+echo                 ips.append(ip)>> "C:\WireGuard\customer_agent_api.py"
+echo     except Exception:>> "C:\WireGuard\customer_agent_api.py"
+echo         pass>> "C:\WireGuard\customer_agent_api.py"
+echo     try:>> "C:\WireGuard\customer_agent_api.py"
+echo         import psutil>> "C:\WireGuard\customer_agent_api.py"
+echo         for iface, addrs in psutil.net_if_addrs().items():>> "C:\WireGuard\customer_agent_api.py"
+echo             for addr in addrs:>> "C:\WireGuard\customer_agent_api.py"
+echo                 if addr.family == socket.AF_INET and not addr.address.startswith("127."):>> "C:\WireGuard\customer_agent_api.py"
+echo                     if addr.address not in ips:>> "C:\WireGuard\customer_agent_api.py"
+echo                         ips.append(addr.address)>> "C:\WireGuard\customer_agent_api.py"
+echo     except ImportError:>> "C:\WireGuard\customer_agent_api.py"
+echo         pass>> "C:\WireGuard\customer_agent_api.py"
+echo     return ips>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo def report_ips_to_cloud(cloud_api_url, customer, ips):>> "C:\WireGuard\customer_agent_api.py"
+echo     requests.post(cloud_api_url, json={"customer": customer, "ips": ips})>> "C:\WireGuard\customer_agent_api.py"
+echo.>> "C:\WireGuard\customer_agent_api.py"
+echo if __name__ == "__main__":>> "C:\WireGuard\customer_agent_api.py"
+echo     import uvicorn>> "C:\WireGuard\customer_agent_api.py"
+echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "C:\WireGuard\customer_agent_api.py"
+
+REM Create startup task to run agent on boot
+schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python C:\WireGuard\customer_agent_api.py" /RL HIGHEST
+
+echo Customer agent installed and set to run at startup. No manual steps required.
