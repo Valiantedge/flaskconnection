@@ -80,6 +80,10 @@ echo PersistentKeepalive = 25>> "C:\WireGuard\wg0.conf"
 REM Activate WireGuard tunnel automatically
 "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "C:\WireGuard\wg0.conf"
 
+
+REM Ensure C:\WireGuard exists before writing scripts
+if not exist "C:\WireGuard" mkdir "C:\WireGuard"
+
 REM Write improved customer_agent_api.py with automated IP reporting using absolute path
 set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
 echo from fastapi import FastAPI, Request> "%AGENT_SCRIPT_PATH%"
@@ -145,13 +149,58 @@ echo     print(f"[Agent Startup] Reporting IPs: {local_ips} for customer: {custo
 echo     report_ips_to_cloud(cloud_api_url, customer, local_ips)>> "%AGENT_SCRIPT_PATH%"
 echo     import uvicorn>> "%AGENT_SCRIPT_PATH%"
 echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "%AGENT_SCRIPT_PATH%"
-
-REM Check if agent script was created
+REM Log after writing agent script
 if exist "%AGENT_SCRIPT_PATH%" (
     echo customer_agent_api.py created successfully in C:\WireGuard
 ) else (
     echo ERROR: customer_agent_api.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.
 )
+
+REM Write customer_agent_register.py directly from batch file
+set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
+echo import requests> "%REGISTER_SCRIPT_PATH%"
+echo import os>> "%REGISTER_SCRIPT_PATH%"
+echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")>> "%REGISTER_SCRIPT_PATH%"
+echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%REGISTER_SCRIPT_PATH%"
+echo payload = {"customer": CUSTOMER}>> "%REGISTER_SCRIPT_PATH%"
+echo try:>> "%REGISTER_SCRIPT_PATH%"
+echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)>> "%REGISTER_SCRIPT_PATH%"
+echo     print(f"Registration result: {r.text}")>> "%REGISTER_SCRIPT_PATH%"
+echo except Exception as e:>> "%REGISTER_SCRIPT_PATH%"
+echo     print(f"Failed to register agent: {e}")>> "%REGISTER_SCRIPT_PATH%"
+REM Log after writing register script
+if exist "%REGISTER_SCRIPT_PATH%" (
+    echo customer_agent_register.py created successfully in C:\WireGuard
+) else (
+    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.
+)
+
+REM Write fetch_and_install_wg_config.py directly from batch file
+set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
+echo import os> "%FETCH_SCRIPT_PATH%"
+echo import requests>> "%FETCH_SCRIPT_PATH%"
+echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")>> "%FETCH_SCRIPT_PATH%"
+echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%FETCH_SCRIPT_PATH%"
+echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf" >> "%FETCH_SCRIPT_PATH%"
+echo resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})>> "%FETCH_SCRIPT_PATH%"
+echo if resp.status_code == 200:>> "%FETCH_SCRIPT_PATH%"
+echo     data = resp.json()>> "%FETCH_SCRIPT_PATH%"
+echo     config_path = data.get("config_path")>> "%FETCH_SCRIPT_PATH%"
+echo     print(f"Config generated at server: {config_path}")>> "%FETCH_SCRIPT_PATH%"
+echo     print("Please implement config download endpoint for full automation.")>> "%FETCH_SCRIPT_PATH%"
+echo     os.system("sudo wg-quick up wg0")>> "%FETCH_SCRIPT_PATH%"
+echo else:>> "%FETCH_SCRIPT_PATH%"
+echo     print("Failed to fetch config from cloud API.")>> "%FETCH_SCRIPT_PATH%"
+REM Log after writing fetch script
+if exist "%FETCH_SCRIPT_PATH%" (
+    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard
+) else (
+    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.
+)
+
+REM List all .py files in C:\WireGuard for troubleshooting
+dir /b C:\WireGuard\*.py
+
 cd /d %~dp0
 
 REM Create startup task to run agent on boot
