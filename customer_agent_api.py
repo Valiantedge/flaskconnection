@@ -30,6 +30,12 @@ async def receive_wg_config(request: Request):
     return {"status": "success", "message": f"Config applied for {customer}", "ips": local_ips}
 
 if __name__ == "__main__":
+    # Automated IP reporting on startup
+    customer = os.environ.get("CUSTOMER", "customer1")
+    cloud_api_url = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/report")
+    local_ips = get_local_ips()
+    print(f"[Agent Startup] Reporting IPs: {local_ips} for customer: {customer}")
+    report_ips_to_cloud(cloud_api_url, customer, local_ips)
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
 
