@@ -8,6 +8,7 @@ set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
 set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
 set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
 set LOGFILE=C:\WireGuard\agent_install.log
+set ADD_PEER_SCRIPT_PATH=C:\WireGuard\add_peer.py
 
 REM Write customer_agent_api.py
 call :write_agent_script > "%AGENT_SCRIPT_PATH%"
@@ -148,5 +149,14 @@ echo     print("Please implement config download endpoint for full automation.")
 echo     os.system("sudo wg-quick up wg0")
 echo else:
 echo     print("Failed to fetch config from cloud API.")
+
+REM Write add_peer.py for peer automation
+call :write_add_peer_script > "%ADD_PEER_SCRIPT_PATH%"
+echo Finished writing add_peer.py>> "%LOGFILE%"
+if exist "%ADD_PEER_SCRIPT_PATH%" (
+    echo add_peer.py created successfully in C:\WireGuard>> "%LOGFILE%"
+) else (
+    echo ERROR: add_peer.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
+)
 goto :eof
 
