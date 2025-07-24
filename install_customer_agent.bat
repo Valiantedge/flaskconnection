@@ -32,6 +32,8 @@ if not exist "C:\Program Files\WireGuard\wireguard.exe" (
 REM Copy agent script to C:\WireGuard
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 REM Write customer_agent_api.py directly from batch file
+
+REM Write improved customer_agent_api.py with automated IP reporting
 echo from fastapi import FastAPI, Request> "C:\WireGuard\customer_agent_api.py"
 echo import os>> "C:\WireGuard\customer_agent_api.py"
 echo import socket>> "C:\WireGuard\customer_agent_api.py"
@@ -61,6 +63,11 @@ echo             return {"status": "partial", "message": f"Config applied, but f
 echo     return {"status": "success", "message": f"Config applied for {customer}", "ips": local_ips}>> "C:\WireGuard\customer_agent_api.py"
 echo.>> "C:\WireGuard\customer_agent_api.py"
 echo if __name__ == "__main__":>> "C:\WireGuard\customer_agent_api.py"
+echo     customer = os.environ.get("CUSTOMER", "customer1")>> "C:\WireGuard\customer_agent_api.py"
+echo     cloud_api_url = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/report")>> "C:\WireGuard\customer_agent_api.py"
+echo     local_ips = get_local_ips()>> "C:\WireGuard\customer_agent_api.py"
+echo     print(f"[Agent Startup] Reporting IPs: {local_ips} for customer: {customer}")>> "C:\WireGuard\customer_agent_api.py"
+echo     report_ips_to_cloud(cloud_api_url, customer, local_ips)>> "C:\WireGuard\customer_agent_api.py"
 echo     import uvicorn>> "C:\WireGuard\customer_agent_api.py"
 echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "C:\WireGuard\customer_agent_api.py"
 echo.>> "C:\WireGuard\customer_agent_api.py"
@@ -85,11 +92,12 @@ echo         pass>> "C:\WireGuard\customer_agent_api.py"
 echo     return ips>> "C:\WireGuard\customer_agent_api.py"
 echo.>> "C:\WireGuard\customer_agent_api.py"
 echo def report_ips_to_cloud(cloud_api_url, customer, ips):>> "C:\WireGuard\customer_agent_api.py"
-echo     requests.post(cloud_api_url, json={"customer": customer, "ips": ips})>> "C:\WireGuard\customer_agent_api.py"
-echo.>> "C:\WireGuard\customer_agent_api.py"
-echo if __name__ == "__main__":>> "C:\WireGuard\customer_agent_api.py"
-echo     import uvicorn>> "C:\WireGuard\customer_agent_api.py"
-echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "C:\WireGuard\customer_agent_api.py"
+echo     try:>> "C:\WireGuard\customer_agent_api.py"
+echo         resp = requests.post(cloud_api_url, json={"customer": customer, "ips": ips}, timeout=10)>> "C:\WireGuard\customer_agent_api.py"
+echo         print(f"Reporting IPs to cloud: {ips} for customer: {customer}")>> "C:\WireGuard\customer_agent_api.py"
+echo         print(f"Cloud API response: {resp.status_code} {resp.text}")>> "C:\WireGuard\customer_agent_api.py"
+echo     except Exception as e:>> "C:\WireGuard\customer_agent_api.py"
+echo         print(f"Failed to report IPs to cloud: {e}")>> "C:\WireGuard\customer_agent_api.py"
 
 REM Create startup task to run agent on boot
 schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python C:\WireGuard\customer_agent_api.py" /RL HIGHEST
