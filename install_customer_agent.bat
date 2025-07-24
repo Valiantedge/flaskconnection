@@ -1,4 +1,8 @@
 @echo on
+REM Detect if running in PowerShell (not cmd.exe)
+if defined PSModulePath (
+    echo WARNING: This batch file should be run with cmd.exe, not PowerShell. Some echo commands may fail in PowerShell.
+)
 echo Starting customer agent installer...
 REM Edit these values as needed
 set CLOUD_API_URL=http://13.58.212.239:8000/report
@@ -86,6 +90,7 @@ if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 
 REM Write improved customer_agent_api.py with automated IP reporting using absolute path
 set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
+echo Writing customer_agent_api.py...
 echo from fastapi import FastAPI, Request> "%AGENT_SCRIPT_PATH%"
 echo import os>> "%AGENT_SCRIPT_PATH%"
 echo import socket>> "%AGENT_SCRIPT_PATH%"
@@ -120,7 +125,7 @@ echo         print(f"Failed to report IPs to cloud: {e}")>> "%AGENT_SCRIPT_PATH%
 echo.>> "%AGENT_SCRIPT_PATH%"
 echo app = FastAPI()>> "%AGENT_SCRIPT_PATH%"
 echo.>> "%AGENT_SCRIPT_PATH%"
-echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf"  # Change path as needed for Windows>> "%AGENT_SCRIPT_PATH%"
+echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf"  ^# Change path as needed for Windows>> "%AGENT_SCRIPT_PATH%"
 echo.>> "%AGENT_SCRIPT_PATH%"
 echo @app.post("/api/wgconfig")>> "%AGENT_SCRIPT_PATH%"
 echo async def receive_wg_config(request: Request):>> "%AGENT_SCRIPT_PATH%"
@@ -158,16 +163,17 @@ if exist "%AGENT_SCRIPT_PATH%" (
 
 REM Write customer_agent_register.py directly from batch file
 set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
+echo Writing customer_agent_register.py...
 echo import requests> "%REGISTER_SCRIPT_PATH%"
 echo import os>> "%REGISTER_SCRIPT_PATH%"
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")>> "%REGISTER_SCRIPT_PATH%"
 echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%REGISTER_SCRIPT_PATH%"
-echo payload = {"customer": CUSTOMER}>> "%REGISTER_SCRIPT_PATH%"
+echo payload = {{"customer": CUSTOMER}}> "%REGISTER_SCRIPT_PATH%"
 echo try:>> "%REGISTER_SCRIPT_PATH%"
 echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)>> "%REGISTER_SCRIPT_PATH%"
-echo     print(f"Registration result: {r.text}")>> "%REGISTER_SCRIPT_PATH%"
+echo     print(f"Registration result: {{r.text}}")>> "%REGISTER_SCRIPT_PATH%"
 echo except Exception as e:>> "%REGISTER_SCRIPT_PATH%"
-echo     print(f"Failed to register agent: {e}")>> "%REGISTER_SCRIPT_PATH%"
+echo     print(f"Failed to register agent: {{e}}")>> "%REGISTER_SCRIPT_PATH%"
 echo Finished writing customer_agent_register.py
 if exist "%REGISTER_SCRIPT_PATH%" (
     echo customer_agent_register.py created successfully in C:\WireGuard
@@ -177,16 +183,17 @@ if exist "%REGISTER_SCRIPT_PATH%" (
 
 REM Write fetch_and_install_wg_config.py directly from batch file
 set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
+echo Writing fetch_and_install_wg_config.py...
 echo import os> "%FETCH_SCRIPT_PATH%"
 echo import requests>> "%FETCH_SCRIPT_PATH%"
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")>> "%FETCH_SCRIPT_PATH%"
 echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%FETCH_SCRIPT_PATH%"
 echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf" >> "%FETCH_SCRIPT_PATH%"
-echo resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})>> "%FETCH_SCRIPT_PATH%"
+echo resp = requests.post(CLOUD_API_URL, json={{"customer": CUSTOMER}})>> "%FETCH_SCRIPT_PATH%"
 echo if resp.status_code == 200:>> "%FETCH_SCRIPT_PATH%"
 echo     data = resp.json()>> "%FETCH_SCRIPT_PATH%"
 echo     config_path = data.get("config_path")>> "%FETCH_SCRIPT_PATH%"
-echo     print(f"Config generated at server: {config_path}")>> "%FETCH_SCRIPT_PATH%"
+echo     print(f"Config generated at server: {{config_path}}")>> "%FETCH_SCRIPT_PATH%"
 echo     print("Please implement config download endpoint for full automation.")>> "%FETCH_SCRIPT_PATH%"
 echo     os.system("sudo wg-quick up wg0")>> "%FETCH_SCRIPT_PATH%"
 echo else:>> "%FETCH_SCRIPT_PATH%"
