@@ -31,10 +31,10 @@ python -m pip install fastapi uvicorn psutil requests
 
 echo Checking for WireGuard...>> "%LOGFILE%"
 if not exist "C:\Program Files\WireGuard\wireguard.exe" (
-    echo Installing WireGuard...>> "%LOGFILE%"
-    powershell -Command "Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wireguard-installer.exe' -OutFile '%TEMP%\wireguard-installer.exe'"
-    start /wait %TEMP%\wireguard-installer.exe /install /quiet
-    del %TEMP%\wireguard-installer.exe
+echo Installing WireGuard...>> "%LOGFILE%"
+powershell -Command "Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wireguard-installer.exe' -OutFile '%TEMP%\wireguard-installer.exe'"
+start /wait %TEMP%\wireguard-installer.exe /install /quiet
+del %TEMP%\wireguard-installer.exe
 )
 
 REM Ensure clean agent script file
