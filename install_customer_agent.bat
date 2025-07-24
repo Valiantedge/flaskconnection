@@ -113,9 +113,6 @@ start "" cmd /k "python %AGENT_SCRIPT_PATH% & pause"
 
 echo Customer agent installed and set to run at startup. No manual steps required.
 
-REM Create startup task to run agent on boot
-schtasks /Create /F /RU SYSTEM /SC ONSTART /TN "CustomerAgentAPI" /TR "python %AGENT_SCRIPT_PATH%" /RL HIGHEST
-
 goto :eof
 
 :write_agent_script
