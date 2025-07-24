@@ -55,7 +55,12 @@ def get_local_ips():
     return ips
 
 def report_ips_to_cloud(cloud_api_url, customer, ips):
-    requests.post(cloud_api_url, json={"customer": customer, "ips": ips})
+    try:
+        resp = requests.post(cloud_api_url, json={"customer": customer, "ips": ips}, timeout=10)
+        print(f"Reporting IPs to cloud: {ips} for customer: {customer}")
+        print(f"Cloud API response: {resp.status_code} {resp.text}")
+    except Exception as e:
+        print(f"Failed to report IPs to cloud: {e}")
 
 if __name__ == "__main__":
     import uvicorn
