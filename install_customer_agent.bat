@@ -57,6 +57,23 @@ if exist "%WG_EXE%" (
     )
     if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
         echo WireGuard keys generated successfully.>> "%LOGFILE%"
+        REM Send public key to server API for registration/add peer
+        set SERVER_API_URL=http://13.58.212.239:8000/add_peer
+        echo Sending public key to server API...>> "%LOGFILE%"
+        curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\", \"peer_public_key\": \"%PRIVKEY%\"}" %SERVER_API_URL% >> "%LOGFILE%" 2>&1
+
+        REM Fetch WireGuard config from server API
+        set CONFIG_API_URL=http://13.58.212.239:8000/generate_config
+        echo Fetching WireGuard config from server API...>> "%LOGFILE%"
+        curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\"}" %CONFIG_API_URL% -o "%WG_CONFIG%" >> "%LOGFILE%" 2>&1
+
+        REM Apply WireGuard config and start tunnel
+        if exist "%WG_CONFIG%" if exist "%WG_EXE%" (
+            "%WG_EXE%" /installtunnelservice "%WG_CONFIG%"
+            echo WireGuard tunnel started using wg.exe>> "%LOGFILE%"
+        ) else (
+            echo ERROR: WireGuard config or executable missing.>> "%LOGFILE%"
+        )
     ) else (
         echo ERROR: WireGuard keys not generated.>> "%LOGFILE%"
     )
