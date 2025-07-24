@@ -1,7 +1,7 @@
 @echo off
 REM Silent installer for customer agent
 REM Edit these values as needed
-set CLOUD_API_URL=https://your-cloud-api.example.com/report
+set CLOUD_API_URL=http://13.58.212.239:8000/report
 set CUSTOMER=customer1
 
 REM Set environment variables system-wide
