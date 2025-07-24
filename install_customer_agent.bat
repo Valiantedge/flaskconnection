@@ -27,7 +27,10 @@ if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
         echo Generating WireGuard private key...>> "%LOGFILE%"
         "%WG_EXE%" genkey > "%WG_PRIV_KEY%" 2>> "%LOGFILE%"
-        REM Log file existence and permissions
+        REM Log the actual output of wg.exe genkey for diagnostics
+        echo --- wg.exe genkey output --- >> "%LOGFILE%"
+        type "%WG_PRIV_KEY%" >> "%LOGFILE%"
+        echo --- end wg.exe genkey output --- >> "%LOGFILE%"
         if not exist "%WG_PRIV_KEY%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
             echo Check permissions for C:\WireGuard and run as Administrator.>> "%LOGFILE%"
