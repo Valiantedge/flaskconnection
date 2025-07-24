@@ -1,46 +1,3 @@
-REM Write customer_agent_register.py directly from batch file
-set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
-echo Writing customer_agent_register.py...>> "%LOGFILE%"
-echo import requests> "%REGISTER_SCRIPT_PATH%"
-echo import os>> "%REGISTER_SCRIPT_PATH%"
-echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")>> "%REGISTER_SCRIPT_PATH%"
-echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%REGISTER_SCRIPT_PATH%"
-echo payload = {"customer": CUSTOMER}>> "%REGISTER_SCRIPT_PATH%"
-echo try:>> "%REGISTER_SCRIPT_PATH%"
-echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)>> "%REGISTER_SCRIPT_PATH%"
-echo     print(f"Registration result: {r.text}")>> "%REGISTER_SCRIPT_PATH%"
-echo except Exception as e:>> "%REGISTER_SCRIPT_PATH%"
-echo     print(f"Failed to register agent: {e}")>> "%REGISTER_SCRIPT_PATH%"
-echo Finished writing customer_agent_register.py>> "%LOGFILE%"
-if exist "%REGISTER_SCRIPT_PATH%" (
-    echo customer_agent_register.py created successfully in C:\WireGuard>> "%LOGFILE%"
-) else (
-    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
-)
-
-REM Write fetch_and_install_wg_config.py directly from batch file
-set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
-echo Writing fetch_and_install_wg_config.py...>> "%LOGFILE%"
-echo import os> "%FETCH_SCRIPT_PATH%"
-echo import requests>> "%FETCH_SCRIPT_PATH%"
-echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")>> "%FETCH_SCRIPT_PATH%"
-echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%FETCH_SCRIPT_PATH%"
-echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf" >> "%FETCH_SCRIPT_PATH%"
-echo resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})>> "%FETCH_SCRIPT_PATH%"
-echo if resp.status_code == 200:>> "%FETCH_SCRIPT_PATH%"
-echo     data = resp.json()>> "%FETCH_SCRIPT_PATH%"
-echo     config_path = data.get("config_path")>> "%FETCH_SCRIPT_PATH%"
-echo     print(f"Config generated at server: {config_path}")>> "%FETCH_SCRIPT_PATH%"
-echo     print("Please implement config download endpoint for full automation.")>> "%FETCH_SCRIPT_PATH%"
-echo     os.system("sudo wg-quick up wg0")>> "%FETCH_SCRIPT_PATH%"
-echo else:>> "%FETCH_SCRIPT_PATH%"
-echo     print("Failed to fetch config from cloud API.")>> "%FETCH_SCRIPT_PATH%"
-echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
-if exist "%FETCH_SCRIPT_PATH%" (
-    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard>> "%LOGFILE%"
-) else (
-    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
-)
 @echo off
 REM Ensure C:\WireGuard directory exists before anything else
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
@@ -82,8 +39,13 @@ del %TEMP%\wireguard-installer.exe
 
 REM Ensure clean agent script file
 if exist "C:\WireGuard\customer_agent_api.py" del "C:\WireGuard\customer_agent_api.py"
-REM Write customer_agent_api.py directly from batch file
+
+REM Write all Python agent scripts after directory creation
 set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
+set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
+set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
+
+REM Write customer_agent_api.py
 echo Writing customer_agent_api.py...>> "%LOGFILE%"
 echo from fastapi import FastAPI, Request> "%AGENT_SCRIPT_PATH%"
 echo import os>> "%AGENT_SCRIPT_PATH%"
@@ -153,6 +115,48 @@ if exist "%AGENT_SCRIPT_PATH%" (
     echo customer_agent_api.py created successfully in C:\WireGuard>> "%LOGFILE%"
 ) else (
     echo ERROR: customer_agent_api.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
+)
+
+REM Write customer_agent_register.py
+echo Writing customer_agent_register.py...>> "%LOGFILE%"
+echo import requests> "%REGISTER_SCRIPT_PATH%"
+echo import os>> "%REGISTER_SCRIPT_PATH%"
+echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")>> "%REGISTER_SCRIPT_PATH%"
+echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%REGISTER_SCRIPT_PATH%"
+echo payload = {"customer": CUSTOMER}>> "%REGISTER_SCRIPT_PATH%"
+echo try:>> "%REGISTER_SCRIPT_PATH%"
+echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)>> "%REGISTER_SCRIPT_PATH%"
+echo     print(f"Registration result: {r.text}")>> "%REGISTER_SCRIPT_PATH%"
+echo except Exception as e:>> "%REGISTER_SCRIPT_PATH%"
+echo     print(f"Failed to register agent: {e}")>> "%REGISTER_SCRIPT_PATH%"
+echo Finished writing customer_agent_register.py>> "%LOGFILE%"
+if exist "%REGISTER_SCRIPT_PATH%" (
+    echo customer_agent_register.py created successfully in C:\WireGuard>> "%LOGFILE%"
+) else (
+    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
+)
+
+REM Write fetch_and_install_wg_config.py
+echo Writing fetch_and_install_wg_config.py...>> "%LOGFILE%"
+echo import os> "%FETCH_SCRIPT_PATH%"
+echo import requests>> "%FETCH_SCRIPT_PATH%"
+echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")>> "%FETCH_SCRIPT_PATH%"
+echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")>> "%FETCH_SCRIPT_PATH%"
+echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf" >> "%FETCH_SCRIPT_PATH%"
+echo resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})>> "%FETCH_SCRIPT_PATH%"
+echo if resp.status_code == 200:>> "%FETCH_SCRIPT_PATH%"
+echo     data = resp.json()>> "%FETCH_SCRIPT_PATH%"
+echo     config_path = data.get("config_path")>> "%FETCH_SCRIPT_PATH%"
+echo     print(f"Config generated at server: {config_path}")>> "%FETCH_SCRIPT_PATH%"
+echo     print("Please implement config download endpoint for full automation.")>> "%FETCH_SCRIPT_PATH%"
+echo     os.system("sudo wg-quick up wg0")>> "%FETCH_SCRIPT_PATH%"
+echo else:>> "%FETCH_SCRIPT_PATH%"
+echo     print("Failed to fetch config from cloud API.")>> "%FETCH_SCRIPT_PATH%"
+echo Finished writing fetch_and_install_wg_config.py>> "%LOGFILE%"
+if exist "%FETCH_SCRIPT_PATH%" (
+    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard>> "%LOGFILE%"
+) else (
+    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
 )
 
 echo Generating WireGuard keys if missing...>> "%LOGFILE%"
