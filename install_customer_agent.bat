@@ -1,49 +1,51 @@
-@echo on
+@echo off
+set LOGFILE=C:\WireGuard\agent_install.log
+echo Batch started at %DATE% %TIME% > "%LOGFILE%"
 REM Detect if running in PowerShell (not cmd.exe)
 if defined PSModulePath (
-    echo WARNING: This batch file should be run with cmd.exe, not PowerShell. Some echo commands may fail in PowerShell.
+    echo WARNING: This batch file should be run with cmd.exe, not PowerShell. Some echo commands may fail in PowerShell.>> "%LOGFILE%"
 )
-echo Starting customer agent installer...
+echo Starting customer agent installer...>> "%LOGFILE%"
 REM Edit these values as needed
 set CLOUD_API_URL=http://13.58.212.239:8000/report
 set CUSTOMER=customer1
 
 REM Set environment variables system-wide
-setx CLOUD_API_URL "%CLOUD_API_URL%" /M
-setx CUSTOMER "%CUSTOMER%" /M
+setx CLOUD_API_URL "%CLOUD_API_URL%" /M >> "%LOGFILE%"
+setx CUSTOMER "%CUSTOMER%" /M >> "%LOGFILE%"
 
-echo Checking for Python...
+echo Checking for Python...>> "%LOGFILE%"
 where python >nul 2>nul
 if %errorlevel% neq 0 (
-    echo Installing Python...
+    echo Installing Python...>> "%LOGFILE%"
     powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe' -OutFile '%TEMP%\python-installer.exe'"
     start /wait %TEMP%\python-installer.exe /quiet InstallAllUsers=1 PrependPath=1
     del %TEMP%\python-installer.exe
 )
 
-echo Installing required Python packages...
+echo Installing required Python packages...>> "%LOGFILE%"
 python -m pip install --upgrade pip
 python -m pip install fastapi uvicorn psutil requests
 
-echo Checking for WireGuard...
+echo Checking for WireGuard...>> "%LOGFILE%"
 if not exist "C:\Program Files\WireGuard\wireguard.exe" (
-    echo Installing WireGuard...
+    echo Installing WireGuard...>> "%LOGFILE%"
     powershell -Command "Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wireguard-installer.exe' -OutFile '%TEMP%\wireguard-installer.exe'"
     start /wait %TEMP%\wireguard-installer.exe /install /quiet
     del %TEMP%\wireguard-installer.exe
 )
 
-echo Ensuring C:\WireGuard directory exists...
+echo Ensuring C:\WireGuard directory exists...>> "%LOGFILE%"
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 REM Ensure clean agent script file
 if exist "C:\WireGuard\customer_agent_api.py" del "C:\WireGuard\customer_agent_api.py"
 REM Write customer_agent_api.py directly from batch file
 
-echo Generating WireGuard keys if missing...
+echo Generating WireGuard keys if missing...>> "%LOGFILE%"
 if not exist "C:\WireGuard\client_private.key" (
     powershell -Command "[Convert]::ToBase64String((New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes(32))" > "C:\WireGuard\client_private.key"
 )
-echo Generating WireGuard keys with wireguard.exe if available...
+echo Generating WireGuard keys with wireguard.exe if available...>> "%LOGFILE%"
 if exist "C:\Program Files\WireGuard\wireguard.exe" (
     "C:\Program Files\WireGuard\wireguard.exe" /generateprivkey > "C:\WireGuard\client_private.key"
     set /p CLIENT_PRIVATE_KEY=<"C:\WireGuard\client_private.key"
@@ -53,12 +55,12 @@ if exist "C:\Program Files\WireGuard\wireguard.exe" (
 
 REM Set server public key and endpoint (edit these as needed)
 
-echo Fetching server public key and endpoint from cloud API...
+echo Fetching server public key and endpoint from cloud API...>> "%LOGFILE%"
 for /f "delims=" %%i in ('python -c "import requests,os;resp=requests.get(os.environ.get('CLOUD_API_URL','http://13.58.212.239:8000/serverinfo'));j=resp.json();print(j.get('server_public_key',''));"') do set SERVER_PUBLIC_KEY=%%i
 for /f "delims=" %%i in ('python -c "import requests,os;resp=requests.get(os.environ.get('CLOUD_API_URL','http://13.58.212.239:8000/serverinfo'));j=resp.json();print(j.get('server_endpoint',''));"') do set SERVER_ENDPOINT=%%i
 set CLIENT_ADDRESS=10.0.0.2/32
 
-echo Writing WireGuard config file...
+echo Writing WireGuard config file...>> "%LOGFILE%"
 echo [Interface]> "C:\WireGuard\wg0.conf"
 if not "%CLIENT_PRIVATE_KEY%"=="" (
     echo PrivateKey = %CLIENT_PRIVATE_KEY%>> "C:\WireGuard\wg0.conf"
@@ -81,16 +83,16 @@ if not "%SERVER_ENDPOINT%"=="" (
 )
 echo AllowedIPs = 0.0.0.0/0>> "C:\WireGuard\wg0.conf"
 echo PersistentKeepalive = 25>> "C:\WireGuard\wg0.conf"
-echo Activating WireGuard tunnel...
+echo Activating WireGuard tunnel...>> "%LOGFILE%"
 "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "C:\WireGuard\wg0.conf"
 
 
-echo Writing Python agent scripts...
+echo Writing Python agent scripts...>> "%LOGFILE%"
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
 
 REM Write improved customer_agent_api.py with automated IP reporting using absolute path
 set AGENT_SCRIPT_PATH=C:\WireGuard\customer_agent_api.py
-echo Writing customer_agent_api.py...
+echo Writing customer_agent_api.py...>> "%LOGFILE%"
 echo from fastapi import FastAPI, Request> "%AGENT_SCRIPT_PATH%"
 echo import os>> "%AGENT_SCRIPT_PATH%"
 echo import socket>> "%AGENT_SCRIPT_PATH%"
@@ -156,14 +158,14 @@ echo     import uvicorn>> "%AGENT_SCRIPT_PATH%"
 echo     uvicorn.run(app, host="0.0.0.0", port=5000)>> "%AGENT_SCRIPT_PATH%"
 echo Finished writing customer_agent_api.py
 if exist "%AGENT_SCRIPT_PATH%" (
-    echo customer_agent_api.py created successfully in C:\WireGuard
+    echo customer_agent_api.py created successfully in C:\WireGuard>> "%LOGFILE%"
 ) else (
-    echo ERROR: customer_agent_api.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.
+    echo ERROR: customer_agent_api.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
 )
 
 REM Write customer_agent_register.py directly from batch file
 set REGISTER_SCRIPT_PATH=C:\WireGuard\customer_agent_register.py
-echo Writing customer_agent_register.py...
+echo Writing customer_agent_register.py...>> "%LOGFILE%"
 echo import requests> "%REGISTER_SCRIPT_PATH%"
 echo import os>> "%REGISTER_SCRIPT_PATH%"
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")>> "%REGISTER_SCRIPT_PATH%"
@@ -176,14 +178,14 @@ echo except Exception as e:>> "%REGISTER_SCRIPT_PATH%"
 echo     print(f"Failed to register agent: {{e}}")>> "%REGISTER_SCRIPT_PATH%"
 echo Finished writing customer_agent_register.py
 if exist "%REGISTER_SCRIPT_PATH%" (
-    echo customer_agent_register.py created successfully in C:\WireGuard
+    echo customer_agent_register.py created successfully in C:\WireGuard>> "%LOGFILE%"
 ) else (
-    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.
+    echo ERROR: customer_agent_register.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
 )
 
 REM Write fetch_and_install_wg_config.py directly from batch file
 set FETCH_SCRIPT_PATH=C:\WireGuard\fetch_and_install_wg_config.py
-echo Writing fetch_and_install_wg_config.py...
+echo Writing fetch_and_install_wg_config.py...>> "%LOGFILE%"
 echo import os> "%FETCH_SCRIPT_PATH%"
 echo import requests>> "%FETCH_SCRIPT_PATH%"
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/generate_config")>> "%FETCH_SCRIPT_PATH%"
@@ -195,21 +197,21 @@ echo     data = resp.json()>> "%FETCH_SCRIPT_PATH%"
 echo     config_path = data.get("config_path")>> "%FETCH_SCRIPT_PATH%"
 echo     print(f"Config generated at server: {{config_path}}")>> "%FETCH_SCRIPT_PATH%"
 echo     print("Please implement config download endpoint for full automation.")>> "%FETCH_SCRIPT_PATH%"
-echo     os.system("sudo wg-quick up wg0")>> "%FETCH_SCRIPT_PATH%"
+echo     os.system("sudo wg-quick up wg0")>> "%%FETCH_SCRIPT_PATH%%"
 echo else:>> "%FETCH_SCRIPT_PATH%"
 echo     print("Failed to fetch config from cloud API.")>> "%FETCH_SCRIPT_PATH%"
 echo Finished writing fetch_and_install_wg_config.py
-if exist "%FETCH_SCRIPT_PATH%" (
-    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard
+if exist "%%FETCH_SCRIPT_PATH%%" (
+    echo fetch_and_install_wg_config.py created successfully in C:\WireGuard>> "%%LOGFILE%%"
 ) else (
-    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.
+    echo ERROR: fetch_and_install_wg_config.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%%LOGFILE%%"
 )
 
-echo Listing all .py files in C:\WireGuard...
-dir /b C:\WireGuard\*.py
+echo Listing all .py files in C:\WireGuard...>> "%LOGFILE%"
+dir /b C:\WireGuard\*.py >> "%LOGFILE%"
 
 cd /d %~dp0
-echo Installer finished. Press any key to exit.
+echo Installer finished at %DATE% %TIME%. Press any key to exit.>> "%LOGFILE%"
 pause
 
 REM Create startup task to run agent on boot
