@@ -20,11 +20,20 @@ set WG_EXE=C:\WireGuard\wg.exe
 REM Download wg.exe if missing (Windows CLI)
 if not exist "%WG_EXE%" (
     echo Downloading wg.exe CLI tool...
-    powershell -Command try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile '%WG_EXE%' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }
-    if exist "%WG_EXE%" (
-        echo wg.exe downloaded successfully.>> "%LOGFILE%"
+    if exist "%SystemRoot%\System32\curl.exe" (
+        "%SystemRoot%\System32\curl.exe" -L -o "%WG_EXE%" "https://download.wireguard.com/windows-client/wg.exe"
     ) else (
+        powershell -Command try { Invoke-WebRequest -Uri 'https://download.wireguard.com/windows-client/wg.exe' -OutFile '%WG_EXE%' } catch { Write-Host 'Failed to download wg.exe'; exit 1 }
+    )
+    REM Validate wg.exe size (should be >100KB)
+    for %%F in ("%WG_EXE%") do set WGEXESIZE=%%~zF
+    if not exist "%WG_EXE%" (
         echo ERROR: Failed to download wg.exe. Key generation will be skipped.>> "%LOGFILE%"
+    ) else if %WGEXESIZE% LSS 100000 (
+        echo ERROR: Downloaded wg.exe is too small (%WGEXESIZE% bytes). Likely corrupt. Key generation will be skipped.>> "%LOGFILE%"
+        del "%WG_EXE%"
+    ) else (
+        echo wg.exe downloaded successfully (%WGEXESIZE% bytes).>> "%LOGFILE%"
     )
 )
 REM Check for wg.exe before keygen
@@ -32,22 +41,32 @@ if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
         echo Generating WireGuard private key...
         "%WG_EXE%" genkey > "%WG_PRIV_KEY%"
+        REM Validate private key length
+        set /p PRIVKEY=<"%WG_PRIV_KEY%"
+        set PRIVKEYLEN=0
+        for /f %%A in ("%WG_PRIV_KEY%") do set PRIVKEYLEN=%%~zA
         if not exist "%WG_PRIV_KEY%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
-        )
-        if exist "%WG_PRIV_KEY%" (
-            set /p PRIVKEY=<"%WG_PRIV_KEY%"
+        ) else if "%PRIVKEY%"=="" (
+            echo ERROR: Private key file is empty.>> "%LOGFILE%"
+        ) else if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" (
             echo Private key: %PRIVKEY%>> "%LOGFILE%"
             echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
             if not exist "%WG_PUB_KEY%" (
                 echo ERROR: Public key file was not created.>> "%LOGFILE%"
             )
+        ) else (
+            echo ERROR: Private key is not the correct length.>> "%LOGFILE%"
         )
     )
     if exist "%WG_PRIV_KEY%" (
-        echo Generating WireGuard public key...
         set /p PRIVKEY=<"%WG_PRIV_KEY%"
-        echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
+        if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" (
+            echo Generating WireGuard public key...
+            echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%"
+        ) else (
+            echo ERROR: Private key is not the correct length. Public key not generated.>> "%LOGFILE%"
+        )
     )
     if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
         echo WireGuard keys generated successfully.>> "%LOGFILE%"
@@ -107,17 +126,22 @@ for /f "tokens=1,2 delims=," %%a in ("%SERVER_INFO%") do (
 REM Create local WireGuard config file (fully automated)
 if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
     set /p PRIVKEY=<"%WG_PRIV_KEY%"
-    echo [Interface] > "%WG_CONFIG%"
-    echo PrivateKey = %PRIVKEY% >> "%WG_CONFIG%"
-    echo Address = 10.0.0.2/32 >> "%WG_CONFIG%"
-    echo DNS = 1.1.1.1 >> "%WG_CONFIG%"
-    echo >> "%WG_CONFIG%"
-    echo [Peer] >> "%WG_CONFIG%"
-    echo PublicKey = %SERVER_PUB_KEY% >> "%WG_CONFIG%"
-    echo Endpoint = %SERVER_ENDPOINT% >> "%WG_CONFIG%"
-    echo AllowedIPs = 0.0.0.0/0 >> "%WG_CONFIG%"
-    echo PersistentKeepalive = 25 >> "%WG_CONFIG%"
-    echo WireGuard config file created at %WG_CONFIG%>> "%LOGFILE%"
+    set /p PUBKEY=<"%WG_PUB_KEY%"
+    if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" if not "%PUBKEY%"=="" if not "%PUBKEY:~43,1%"=="" (
+        echo [Interface] > "%WG_CONFIG%"
+        echo PrivateKey = %PRIVKEY% >> "%WG_CONFIG%"
+        echo Address = 10.0.0.2/32 >> "%WG_CONFIG%"
+        echo DNS = 1.1.1.1 >> "%WG_CONFIG%"
+        echo >> "%WG_CONFIG%"
+        echo [Peer] >> "%WG_CONFIG%"
+        echo PublicKey = %SERVER_PUB_KEY% >> "%WG_CONFIG%"
+        echo Endpoint = %SERVER_ENDPOINT% >> "%WG_CONFIG%"
+        echo AllowedIPs = 0.0.0.0/0 >> "%WG_CONFIG%"
+        echo PersistentKeepalive = 25 >> "%WG_CONFIG%"
+        echo WireGuard config file created at %WG_CONFIG%>> "%LOGFILE%"
+    ) else (
+        echo ERROR: Private or public key is not the correct length. Config not created.>> "%LOGFILE%"
+    )
 ) else (
     echo ERROR: WireGuard config not created due to missing keys.>> "%LOGFILE%"
 )
