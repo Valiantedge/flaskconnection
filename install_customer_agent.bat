@@ -11,6 +11,8 @@ if not exist "C:\Program Files\WireGuard\wireguard.exe" (
 )
 
 REM Generate WireGuard keys if not present
+echo --- Directory listing before keygen --- >> "%LOGFILE%"
+dir "C:\Program Files\WireGuard" >> "%LOGFILE%"
 set WG_PRIV_KEY=C:\WireGuard\wg_private.key
 set WG_PUB_KEY=C:\WireGuard\wg_public.key
 set WG_CONFIG=C:\WireGuard\wg0.conf
@@ -20,7 +22,8 @@ if not exist "%WG_PRIV_KEY%" (
 )
 if exist "%WG_PRIV_KEY%" (
     echo Generating WireGuard public key...
-    type "%WG_PRIV_KEY%" | "C:\Program Files\WireGuard\wg.exe" pubkey > "%WG_PUB_KEY%"
+    set /p PRIVKEY=<"%WG_PRIV_KEY%"
+    echo %PRIVKEY% | "C:\Program Files\WireGuard\wg.exe" pubkey > "%WG_PUB_KEY%"
 )
 if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
     echo WireGuard keys generated successfully.>> "%LOGFILE%"
