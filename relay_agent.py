@@ -8,7 +8,7 @@ import websockets
 import json
 import subprocess
 
-CLOUD_WS_URL = "ws://<CLOUD_SERVER_IP>:8765/ws"  # Replace with your cloud server IP
+CLOUD_WS_URL = "ws://13.58.212.239:8765/ws"  # Replace with your cloud server IP
 
 async def run_agent():
     async with websockets.connect(CLOUD_WS_URL) as websocket:
