@@ -35,6 +35,34 @@ REM Ensure clean agent script file
 if exist "C:\WireGuard\customer_agent_api.py" del "C:\WireGuard\customer_agent_api.py"
 REM Write customer_agent_api.py directly from batch file
 
+REM Generate WireGuard keys if missing
+if not exist "C:\WireGuard\client_private.key" (
+    powershell -Command "[Convert]::ToBase64String((New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes(32))" > "C:\WireGuard\client_private.key"
+)
+REM Use wireguard.exe to generate keys if available
+if exist "C:\Program Files\WireGuard\wireguard.exe" (
+    "C:\Program Files\WireGuard\wireguard.exe" /generateprivkey > "C:\WireGuard\client_private.key"
+    set /p CLIENT_PRIVATE_KEY=<"C:\WireGuard\client_private.key"
+    echo %CLIENT_PRIVATE_KEY% | "C:\Program Files\WireGuard\wireguard.exe" /generatepubkey > "C:\WireGuard\client_public.key"
+    set /p CLIENT_PUBLIC_KEY=<"C:\WireGuard\client_public.key"
+)
+
+REM Set server public key and endpoint (edit these as needed)
+set SERVER_PUBLIC_KEY=REPLACE_WITH_SERVER_PUBLIC_KEY
+set SERVER_ENDPOINT=REPLACE_WITH_SERVER_IP:51820
+set CLIENT_ADDRESS=10.0.0.2/32
+
+REM Write WireGuard config file
+echo [Interface]> "C:\WireGuard\wg0.conf"
+echo PrivateKey = %CLIENT_PRIVATE_KEY%>> "C:\WireGuard\wg0.conf"
+echo Address = %CLIENT_ADDRESS%>> "C:\WireGuard\wg0.conf"
+echo DNS = 8.8.8.8>> "C:\WireGuard\wg0.conf"
+echo.>> "C:\WireGuard\wg0.conf"
+echo [Peer]>> "C:\WireGuard\wg0.conf"
+echo PublicKey = %SERVER_PUBLIC_KEY%>> "C:\WireGuard\wg0.conf"
+echo Endpoint = %SERVER_ENDPOINT%>> "C:\WireGuard\wg0.conf"
+echo AllowedIPs = 0.0.0.0/0>> "C:\WireGuard\wg0.conf"
+echo PersistentKeepalive = 25>> "C:\WireGuard\wg0.conf"
 REM Write improved customer_agent_api.py with automated IP reporting
 echo from fastapi import FastAPI, Request> "C:\WireGuard\customer_agent_api.py"
 echo import os>> "C:\WireGuard\customer_agent_api.py"
