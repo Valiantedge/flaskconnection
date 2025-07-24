@@ -179,10 +179,21 @@ echo     uvicorn.run(app, host="0.0.0.0", port=5000)
 goto :eof
 
 :write_register_script
-echo import requests, os
+echo import requests, os, socket
 echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/register")
 echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")
-echo payload = {"customer": CUSTOMER}
+echo def get_local_ips():
+echo     ips = []
+echo     hostname = socket.gethostname()
+echo     try:
+echo         for ip in socket.gethostbyname_ex(hostname)[2]:
+echo             if not ip.startswith("127."):
+echo                 ips.append(ip)
+echo     except Exception:
+echo         pass
+echo     return ips
+echo ips = get_local_ips()
+echo payload = {"customer": CUSTOMER, "ips": ips}
 echo try:
 echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)
 echo     print(f"Registration result: {r.text}")
@@ -205,6 +216,7 @@ echo     os.system("sudo wg-quick up wg0")
 echo else:
 echo     print("Failed to fetch config from cloud API.")
 
+
 REM Write add_peer.py for peer automation
 call :write_add_peer_script > "%ADD_PEER_SCRIPT_PATH%"
 echo Finished writing add_peer.py>> "%LOGFILE%"
@@ -213,5 +225,19 @@ if exist "%ADD_PEER_SCRIPT_PATH%" (
 ) else (
     echo ERROR: add_peer.py was NOT created in C:\WireGuard. Check permissions and run as Administrator.>> "%LOGFILE%"
 )
+goto :eof
+
+:write_add_peer_script
+echo import requests, os
+echo CLOUD_API_URL = os.environ.get("CLOUD_API_URL", "http://13.58.212.239:8000/add_peer")
+echo CUSTOMER = os.environ.get("CUSTOMER", "customer1")
+echo PEER_PUBLIC_KEY = os.environ.get("PEER_PUBLIC_KEY", "")
+echo PEER_ALLOWED_IPS = os.environ.get("PEER_ALLOWED_IPS", "10.0.0.2/32")
+echo payload = {"customer": CUSTOMER, "peer_public_key": PEER_PUBLIC_KEY, "peer_allowed_ips": PEER_ALLOWED_IPS}
+echo try:
+echo     r = requests.post(CLOUD_API_URL, json=payload, timeout=10)
+echo     print(f"Add peer result: {r.text}")
+echo except Exception as e:
+echo     print(f"Failed to add peer: {e}")
 goto :eof
 
