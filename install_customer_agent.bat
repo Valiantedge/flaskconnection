@@ -31,6 +31,8 @@ if not exist "C:\Program Files\WireGuard\wireguard.exe" (
 
 REM Copy agent script to C:\WireGuard
 if not exist "C:\WireGuard" mkdir "C:\WireGuard"
+REM Ensure clean agent script file
+if exist "C:\WireGuard\customer_agent_api.py" del "C:\WireGuard\customer_agent_api.py"
 REM Write customer_agent_api.py directly from batch file
 
 REM Write improved customer_agent_api.py with automated IP reporting
