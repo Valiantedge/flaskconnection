@@ -27,7 +27,10 @@ if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
         echo Generating WireGuard private key...>> "%LOGFILE%"
         cd /d "C:\Program Files\WireGuard"
-        "%WG_EXE%" genkey > "%WG_PRIV_KEY%" 2>> "%LOGFILE%"
+        "%WG_EXE%" genkey > "%WG_PRIV_KEY%.tmp" 2>> "%LOGFILE%"
+        REM Convert to Windows line endings to ensure set /p works
+        powershell -Command "[IO.File]::WriteAllLines('%WG_PRIV_KEY%', (Get-Content -Raw '%WG_PRIV_KEY%.tmp').Replace('`n','`r`n'))"
+        del "%WG_PRIV_KEY%.tmp"
         REM Log the actual output of wg.exe genkey for diagnostics
         echo --- wg.exe genkey output --- >> "%LOGFILE%"
         type "%WG_PRIV_KEY%" >> "%LOGFILE%"
@@ -36,7 +39,7 @@ if exist "%WG_EXE%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
             echo Check permissions for C:\WireGuard and run as Administrator.>> "%LOGFILE%"
         ) else (
-            for /f "delims=" %%K in ('powershell -Command "[System.IO.File]::ReadAllText('%WG_PRIV_KEY%').Trim()"') do call set PRIVKEY=%%K
+            set /p PRIVKEY=<"%WG_PRIV_KEY%"
             if "%PRIVKEY%"=="" (
                 echo ERROR: Private key file is empty.>> "%LOGFILE%"
             ) else if not "%PRIVKEY:~43,1%"=="" (
