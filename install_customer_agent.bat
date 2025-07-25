@@ -46,7 +46,7 @@ if exist "%WG_EXE%" (
             ) else if not "%PRIVKEY:~43,1%"=="" (
                 echo Private key: %PRIVKEY%>> "%LOGFILE%"
                 echo Generating WireGuard public key...>> "%LOGFILE%"
-                echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
+                "%WG_EXE%" pubkey < "%WG_PRIV_KEY%" > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
                 if exist "%WG_PUB_KEY%" (
                     echo --- wg.exe pubkey output --- >> "%LOGFILE%"
                     type "%WG_PUB_KEY%" >> "%LOGFILE%"
@@ -63,7 +63,7 @@ if exist "%WG_EXE%" (
         set /p PRIVKEY=<"%WG_PRIV_KEY%"
         if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" (
             echo Generating WireGuard public key...>> "%LOGFILE%"
-            echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
+            "%WG_EXE%" pubkey < "%WG_PRIV_KEY%" > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
         ) else (
             echo ERROR: Private key is not the correct length. Public key not generated.>> "%LOGFILE%"
         )
