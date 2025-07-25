@@ -84,10 +84,17 @@ async def add_peer(request: Request):
                 break
     if not pubkey:
         return {"status": "error", "message": "Could not extract public key"}
-    # Append peer to server config
+    # Append peer to server config only if not already present
     server_conf = "/etc/wireguard/wg0.conf"
     peer_conf = f"\n[Peer]\nPublicKey = {pubkey}\nAllowedIPs = 10.0.0.2/32\n"
     try:
+        # Read current config to check for existing peer
+        if os.path.exists(server_conf):
+            with open(server_conf, "r") as f:
+                conf_content = f.read()
+            if f"PublicKey = {pubkey}" in conf_content:
+                return {"status": "success", "message": f"Peer already exists for {customer}", "public_key": pubkey}
+        # Append new peer
         with open(server_conf, "a") as f:
             f.write(peer_conf)
     except Exception as e:
