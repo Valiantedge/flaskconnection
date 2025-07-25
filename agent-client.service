@@ -1,0 +1,13 @@
+[Unit]
+Description=Python Agent Client
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /path/to/agent_client_dynamic.py
+WorkingDirectory=/path/to/
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
