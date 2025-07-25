@@ -3,6 +3,10 @@ from fastapi import FastAPI, Request
 import os
 import subprocess
 
+
+SERVER_PUBLIC_KEY = "72ann+KSWZ+n4la1XfSTMphy8n3y52hJqixuQub2iVY="
+SERVER_ENDPOINT = "13.58.212.239"
+
 app = FastAPI()
 
 # Store reported IPs in memory (for demo; use DB in production)
@@ -19,8 +23,8 @@ Address = 10.0.0.2/32
 DNS = 8.8.8.8
 
 [Peer]
-PublicKey = <server-public-key>
-Endpoint = <server-endpoint>:51820
+PublicKey = {SERVER_PUBLIC_KEY}
+Endpoint = {SERVER_ENDPOINT}:51820
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 """
