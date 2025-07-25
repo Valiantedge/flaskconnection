@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 import os
 import subprocess
 
@@ -46,7 +46,8 @@ async def report_agent_ip(request: Request):
     registered_agents[customer] = ips
     return {"status": "success", "message": f"IPs received for {customer}", "ips": ips}
 
-# API endpoint: Generate WireGuard config for customer
+
+# API endpoint: Generate WireGuard config for customer (returns as downloadable file)
 @app.post("/generate_config")
 async def api_generate_config(request: Request):
     data = await request.json()
@@ -54,11 +55,13 @@ async def api_generate_config(request: Request):
     if not customer:
         return {"status": "error", "message": "Missing customer name"}
     config_path = generate_wg_config(customer)
-    # Read the config content and return it in the response
     try:
         with open(config_path, "r") as f:
             config_content = f.read()
-        return {"status": "success", "message": f"Config generated for {customer}", "config": config_content}
+        headers = {
+            "Content-Disposition": f"attachment; filename={customer}.conf"
+        }
+        return Response(content=config_content, media_type="text/plain", headers=headers)
     except Exception as e:
         return {"status": "error", "message": f"Failed to read config: {e}"}
 
