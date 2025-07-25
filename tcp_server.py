@@ -17,15 +17,20 @@ def start_tcp_server(listen_ip, listen_port):
                 "password": "Cvbnmjkl@30263"
             }
             conn.sendall(json.dumps(ssh_details).encode())
-            while True:
-                # Input command to send to agent
-                command = input("Enter command to run on remote server (or 'exit' to quit): ")
-                if command.strip().lower() == 'exit':
-                    break
+            # List of commands to run automatically
+            commands = [
+                "whoami",
+                "uname -a",
+                "ls /home/ubuntu",
+                # Add more commands as needed
+            ]
+            for command in commands:
+                print(f"Sending command: {command}")
                 conn.sendall(command.encode())
-                # Receive output from agent
                 output = conn.recv(65536).decode()
-                print(f"Output from agent:\n{output}")
+                print(f"Output from agent for '{command}':\n{output}")
+            # Optionally, close the connection after running all commands
+            print("All commands sent. Closing connection.")
 
 if __name__ == "__main__":
     # Example usage: listen on 0.0.0.0:9000

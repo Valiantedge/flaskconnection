@@ -1,6 +1,0 @@
-resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})
-    print(f"Config generated at server: {config_path}")
-    print("Please implement config download endpoint for full automation.")
-    os.system("sudo wg-quick up wg0")
-else:
-    print("Failed to fetch config from cloud API.")

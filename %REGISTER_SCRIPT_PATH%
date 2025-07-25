@@ -1,3 +1,0 @@
-payload = {"customer": CUSTOMER}
-    print(f"Registration result: {r.text}")
-    print(f"Failed to register agent: {e}")
