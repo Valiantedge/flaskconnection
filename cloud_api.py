@@ -50,7 +50,13 @@ async def api_generate_config(request: Request):
     if not customer:
         return {"status": "error", "message": "Missing customer name"}
     config_path = generate_wg_config(customer)
-    return {"status": "success", "message": f"Config generated for {customer}", "config_path": config_path}
+    # Read the config content and return it in the response
+    try:
+        with open(config_path, "r") as f:
+            config_content = f.read()
+        return {"status": "success", "message": f"Config generated for {customer}", "config": config_content}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to read config: {e}"}
 
 # API endpoint: Add customer as WireGuard peer to server config
 @app.post("/add_peer")
