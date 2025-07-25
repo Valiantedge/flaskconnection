@@ -65,23 +65,28 @@ if exist "%WG_EXE%" (
         set /p PRIVKEY=<wg_private.key
         set /p PUBKEY=<wg_public.key
         echo WireGuard keys generated successfully.>> "%LOGFILE%"
-        REM Send public key to server API for registration/add peer
-        set SERVER_API_URL=http://13.58.212.239:8000/add_peer
-        echo Sending public key to server API...>> "%LOGFILE%"
-        curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\", \"peer_public_key\": \"%PRIVKEY%\"}" %SERVER_API_URL% >> "%LOGFILE%" 2>&1
-
-        REM Fetch WireGuard config from server API
-        set CONFIG_API_URL=http://13.58.212.239:8000/generate_config
-        echo Fetching WireGuard config from server API...>> "%LOGFILE%"
-        curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\"}" %CONFIG_API_URL% -o "%WG_CONFIG%" >> "%LOGFILE%" 2>&1
-
-        REM Apply WireGuard config and start tunnel
-        if exist "%WG_CONFIG%" if exist "%WG_EXE%" (
-            "%WG_EXE%" /installtunnelservice "%WG_CONFIG%"
-            echo WireGuard tunnel started using wg.exe>> "%LOGFILE%"
-        ) else (
-            echo ERROR: WireGuard config or executable missing.>> "%LOGFILE%"
-        )
+        echo.>> "%LOGFILE%"
+        echo === Manual Cloud Registration Required ===>> "%LOGFILE%"
+        echo To register your public key with the server, run the following command in PowerShell or CMD:>> "%LOGFILE%"
+        echo curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\", \"peer_public_key\": \"%PRIVKEY%\"}" http://13.58.212.239:8000/add_peer>> "%LOGFILE%"
+        echo.>> "%LOGFILE%"
+        echo To fetch your WireGuard config, run:>> "%LOGFILE%"
+        echo curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\"}" http://13.58.212.239:8000/generate_config -o C:\WireGuard\wg0.conf>> "%LOGFILE%"
+        echo.>> "%LOGFILE%"
+        echo After downloading wg0.conf, you can start the tunnel with:>> "%LOGFILE%"
+        echo "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice C:\WireGuard\wg0.conf>> "%LOGFILE%"
+        echo =========================================>> "%LOGFILE%"
+        echo.>> "%LOGFILE%"
+        echo === Manual Cloud Registration Required ===
+        echo To register your public key with the server, run the following command in PowerShell or CMD:
+        echo curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\", \"peer_public_key\": \"%PRIVKEY%\"}" http://13.58.212.239:8000/add_peer
+        echo.
+        echo To fetch your WireGuard config, run:
+        echo curl -X POST -H "Content-Type: application/json" -d "{\"customer\": \"customer1\"}" http://13.58.212.239:8000/generate_config -o C:\WireGuard\wg0.conf
+        echo.
+        echo After downloading wg0.conf, you can start the tunnel with:
+        echo "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice C:\WireGuard\wg0.conf
+        echo =========================================
     ) else (
         echo ERROR: WireGuard keys not generated.>> "%LOGFILE%"
     )
