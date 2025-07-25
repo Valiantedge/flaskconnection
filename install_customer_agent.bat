@@ -133,23 +133,24 @@ for /f "tokens=1,2 delims=," %%a in ("%SERVER_INFO%") do (
 )
 
 REM Create local WireGuard config file (fully automated)
-if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
-    set /p PRIVKEY=<"%WG_PRIV_KEY%"
-    set /p PUBKEY=<"%WG_PUB_KEY%"
-    if not "%PRIVKEY%"=="" if not "%PRIVKEY:~43,1%"=="" if not "%PUBKEY%"=="" if not "%PUBKEY:~43,1%"=="" (
-        echo [Interface] > "%WG_CONFIG%"
-        echo PrivateKey = %PRIVKEY% >> "%WG_CONFIG%"
-        echo Address = 10.0.0.2/32 >> "%WG_CONFIG%"
-        echo DNS = 1.1.1.1 >> "%WG_CONFIG%"
-        echo >> "%WG_CONFIG%"
-        echo [Peer] >> "%WG_CONFIG%"
-        echo PublicKey = %SERVER_PUB_KEY% >> "%WG_CONFIG%"
-        echo Endpoint = %SERVER_ENDPOINT% >> "%WG_CONFIG%"
-        echo AllowedIPs = 0.0.0.0/0 >> "%WG_CONFIG%"
-        echo PersistentKeepalive = 25 >> "%WG_CONFIG%"
-        echo WireGuard config file created at %WG_CONFIG%>> "%LOGFILE%"
+if exist "C:\WireGuard\wg_private.key" if exist "C:\WireGuard\wg_public.key" (
+    cd /d C:\WireGuard
+    set /p PRIVKEY=<wg_private.key
+    set /p PUBKEY=<wg_public.key
+    if not "%PRIVKEY%"=="" if not "%PUBKEY%"=="" (
+        echo [Interface] > wg0.conf
+        echo PrivateKey = %PRIVKEY% >> wg0.conf
+        echo Address = 10.0.0.2/32 >> wg0.conf
+        echo DNS = 1.1.1.1 >> wg0.conf
+        echo. >> wg0.conf
+        echo [Peer] >> wg0.conf
+        echo PublicKey = %SERVER_PUB_KEY% >> wg0.conf
+        echo Endpoint = %SERVER_ENDPOINT% >> wg0.conf
+        echo AllowedIPs = 0.0.0.0/0 >> wg0.conf
+        echo PersistentKeepalive = 25 >> wg0.conf
+        echo WireGuard config file created at C:\WireGuard\wg0.conf>> "%LOGFILE%"
     ) else (
-        echo ERROR: Private or public key is not the correct length. Config not created.>> "%LOGFILE%"
+        echo ERROR: Private or public key is empty. Config not created.>> "%LOGFILE%"
     )
 ) else (
     echo ERROR: WireGuard config not created due to missing keys.>> "%LOGFILE%"
