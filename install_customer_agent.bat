@@ -26,6 +26,7 @@ REM Check for wg.exe before keygen
 if exist "%WG_EXE%" (
     if not exist "%WG_PRIV_KEY%" (
         echo Generating WireGuard private key...>> "%LOGFILE%"
+        cd /d "C:\Program Files\WireGuard"
         "%WG_EXE%" genkey > "%WG_PRIV_KEY%" 2>> "%LOGFILE%"
         REM Log the actual output of wg.exe genkey for diagnostics
         echo --- wg.exe genkey output --- >> "%LOGFILE%"
