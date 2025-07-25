@@ -14,7 +14,7 @@ def start_tcp_server(listen_ip, listen_port):
             ssh_details = {
                 "ip": "192.168.32.243",  # Change as needed
                 "username": "ubuntu",  # Change as needed
-                "password": "192.168.32.243"
+                "password": "Cvbnmjkl@30263"
             }
             conn.sendall(json.dumps(ssh_details).encode())
             while True:
