@@ -128,12 +128,9 @@ if exist "%FETCH_SCRIPT_PATH%" (
 
 
 REM Fetch server public key and endpoint from API
-set SERVER_API_URL=http://13.58.212.239:8000/get_server_info
-for /f "tokens=*" %%A in ('curl -s %SERVER_API_URL%') do set SERVER_INFO=%%A
-for /f "tokens=1,2 delims=," %%a in ("%SERVER_INFO%") do (
-    set SERVER_PUB_KEY=%%a
-    set SERVER_ENDPOINT=%%b
-)
+REM Fetch server public key and endpoint from API (robust JSON parsing)
+for /f "delims=" %%A in ('powershell -Command "(Invoke-RestMethod -Uri 'http://13.58.212.239:8000/get_server_info').public_key"') do set SERVER_PUB_KEY=%%A
+for /f "delims=" %%A in ('powershell -Command "(Invoke-RestMethod -Uri 'http://13.58.212.239:8000/get_server_info').endpoint"') do set SERVER_ENDPOINT=%%A
 
 REM Create local WireGuard config file (fully automated)
 if exist "C:\WireGuard\wg_private.key" if exist "C:\WireGuard\wg_public.key" (
