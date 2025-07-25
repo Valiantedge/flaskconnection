@@ -61,6 +61,9 @@ if exist "%WG_EXE%" (
         )
     )
     if exist "%WG_PRIV_KEY%" if exist "%WG_PUB_KEY%" (
+        cd /d C:\WireGuard
+        set /p PRIVKEY=<wg_private.key
+        set /p PUBKEY=<wg_public.key
         echo WireGuard keys generated successfully.>> "%LOGFILE%"
         REM Send public key to server API for registration/add peer
         set SERVER_API_URL=http://13.58.212.239:8000/add_peer
