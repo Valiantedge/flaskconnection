@@ -127,34 +127,9 @@ if exist "%FETCH_SCRIPT_PATH%" (
 )
 
 
-REM Fetch server public key and endpoint from API
-REM Fetch server public key and endpoint from API (robust JSON parsing)
-for /f "delims=" %%A in ('powershell -Command "(Invoke-RestMethod -Uri 'http://13.58.212.239:8000/get_server_info').public_key"') do set SERVER_PUB_KEY=%%A
-for /f "delims=" %%A in ('powershell -Command "(Invoke-RestMethod -Uri 'http://13.58.212.239:8000/get_server_info').endpoint"') do set SERVER_ENDPOINT=%%A
 
-REM Create local WireGuard config file (fully automated)
-if exist "C:\WireGuard\wg_private.key" if exist "C:\WireGuard\wg_public.key" (
-    cd /d C:\WireGuard
-    set /p PRIVKEY=<wg_private.key
-    set /p PUBKEY=<wg_public.key
-    if not "%PRIVKEY%"=="" if not "%PUBKEY%"=="" (
-        echo [Interface] > wg0.conf
-        echo PrivateKey = %PRIVKEY% >> wg0.conf
-        echo Address = 10.0.0.2/32 >> wg0.conf
-        echo DNS = 1.1.1.1 >> wg0.conf
-        echo. >> wg0.conf
-        echo [Peer] >> wg0.conf
-        echo PublicKey = %SERVER_PUB_KEY% >> wg0.conf
-        echo Endpoint = %SERVER_ENDPOINT% >> wg0.conf
-        echo AllowedIPs = 0.0.0.0/0 >> wg0.conf
-        echo PersistentKeepalive = 25 >> wg0.conf
-        echo WireGuard config file created at C:\WireGuard\wg0.conf>> "%LOGFILE%"
-    ) else (
-        echo ERROR: Private or public key is empty. Config not created.>> "%LOGFILE%"
-    )
-) else (
-    echo ERROR: WireGuard config not created due to missing keys.>> "%LOGFILE%"
-)
+REM Automated: Fetch WireGuard config from cloud and install
+python "%FETCH_SCRIPT_PATH%"
 
 
 REM Run agent registration script automatically
