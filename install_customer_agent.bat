@@ -36,7 +36,7 @@ if exist "%WG_EXE%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
             echo Check permissions for C:\WireGuard and run as Administrator.>> "%LOGFILE%"
         ) else (
-            set /p PRIVKEY=<"%WG_PRIV_KEY%"
+            for /f "usebackq delims=" %%K in (`powershell -Command Get-Content -Raw '%WG_PRIV_KEY%'`) do set PRIVKEY=%%K
             if "%PRIVKEY%"=="" (
                 echo ERROR: Private key file is empty.>> "%LOGFILE%"
             ) else if not "%PRIVKEY:~43,1%"=="" (
