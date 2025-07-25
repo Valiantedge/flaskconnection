@@ -39,22 +39,15 @@ if exist "%WG_EXE%" (
             echo ERROR: Private key file was not created.>> "%LOGFILE%"
             echo Check permissions for C:\WireGuard and run as Administrator.>> "%LOGFILE%"
         ) else (
-            for /f "usebackq delims=" %%K in (`powershell -Command "Get-Content -Raw '%WG_PRIV_KEY%' | Select-Object -First 1"`) do set "PRIVKEY=%%K"
-            if "%PRIVKEY%"=="" (
-                echo ERROR: Private key file is empty.>> "%LOGFILE%"
-            ) else if not "%PRIVKEY:~43,1%"=="" (
-                echo Private key: %PRIVKEY%>> "%LOGFILE%"
-                echo Generating WireGuard public key...>> "%LOGFILE%"
-                "%WG_EXE%" pubkey < "%WG_PRIV_KEY%" > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
-                if exist "%WG_PUB_KEY%" (
-                    echo --- wg.exe pubkey output --- >> "%LOGFILE%"
-                    type "%WG_PUB_KEY%" >> "%LOGFILE%"
-                    echo --- end wg.exe pubkey output --- >> "%LOGFILE%"
-                ) else (
-                    echo ERROR: Public key file was not created.>> "%LOGFILE%"
-                )
+            cd /d C:\WireGuard
+            echo Generating WireGuard public key...>> "%LOGFILE%"
+            "C:\Program Files\WireGuard\wg.exe" pubkey < wg_private.key > wg_public.key 2>> "%LOGFILE%"
+            if exist "wg_public.key" (
+                echo --- wg.exe pubkey output --- >> "%LOGFILE%"
+                type wg_public.key >> "%LOGFILE%"
+                echo --- end wg.exe pubkey output --- >> "%LOGFILE%"
             ) else (
-                echo ERROR: Private key is not the correct length.>> "%LOGFILE%"
+                echo ERROR: Public key file was not created.>> "%LOGFILE%"
             )
         )
     )
