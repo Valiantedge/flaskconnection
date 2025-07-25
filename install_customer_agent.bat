@@ -44,8 +44,13 @@ if exist "%WG_EXE%" (
                 echo ERROR: Private key file is empty.>> "%LOGFILE%"
             ) else if not "%PRIVKEY:~43,1%"=="" (
                 echo Private key: %PRIVKEY%>> "%LOGFILE%"
+                echo Generating WireGuard public key...>> "%LOGFILE%"
                 echo %PRIVKEY% | "%WG_EXE%" pubkey > "%WG_PUB_KEY%" 2>> "%LOGFILE%"
-                if not exist "%WG_PUB_KEY%" (
+                if exist "%WG_PUB_KEY%" (
+                    echo --- wg.exe pubkey output --- >> "%LOGFILE%"
+                    type "%WG_PUB_KEY%" >> "%LOGFILE%"
+                    echo --- end wg.exe pubkey output --- >> "%LOGFILE%"
+                ) else (
                     echo ERROR: Public key file was not created.>> "%LOGFILE%"
                 )
             ) else (
