@@ -257,12 +257,15 @@ echo WG_CONFIG_PATH = "C:/WireGuard/wg0.conf"
 echo resp = requests.post(CLOUD_API_URL, json={"customer": CUSTOMER})
 echo if resp.status_code == 200:
 echo     data = resp.json()
-echo     config_path = data.get("config_path")
-echo     print(f"Config generated at server: {config_path}")
-echo     print("Please implement config download endpoint for full automation.")
-echo     os.system("sudo wg-quick up wg0")
+echo     config_content = data.get("config")
+echo     if config_content:
+echo         with open(WG_CONFIG_PATH, "w") as f:
+echo             f.write(config_content)
+echo         print(f"WireGuard config saved to {WG_CONFIG_PATH}")
+echo     else:
+echo         print("No config content received from server. Check backend response.")
 echo else:
-echo     print("Failed to fetch config from cloud API.")
+echo     print(f"Failed to fetch config from cloud API. Status: {resp.status_code}, Response: {resp.text}")
 
 
 REM Write add_peer.py for peer automation
