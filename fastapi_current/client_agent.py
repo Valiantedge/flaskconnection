@@ -1,13 +1,27 @@
+
 import asyncio
 import websockets
 import json
 import subprocess
+import requests
 
-SERVER_URL = "ws://your-server-ip:8000"
-AGENT_TOKEN = "your-agent-token"
+API_URL = "https://socket.valiantedgetech.com/api/agent/register"
+WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/ws/agent/{agent_id}"
+
+def register_agent(name):
+    resp = requests.post(API_URL, json={"name": name})
+    if resp.status_code == 200:
+        data = resp.json()
+        return data["agent_id"], data["token"]
+    else:
+        print(f"[ERROR] Registration failed: {resp.text}")
+        exit(1)
 
 async def main():
-    async with websockets.connect(SERVER_URL, extra_headers={"Authorization": AGENT_TOKEN}) as ws:
+    agent_name = "agent-001"  # Change as needed or make dynamic
+    agent_id, token = register_agent(agent_name)
+    ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
+    async with websockets.connect(ws_url, extra_headers={"Authorization": f"Bearer {token}"}) as ws:
         print("[INFO] Connected to server")
         while True:
             message = await ws.recv()
@@ -21,4 +35,5 @@ async def main():
             except Exception as e:
                 await ws.send(json.dumps({"output": str(e)}))
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
