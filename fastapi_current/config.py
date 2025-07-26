@@ -1,0 +1,5 @@
+MYSQL_USER = "appuser"
+MYSQL_PASSWORD = "valiantops$2025"
+MYSQL_HOST = "localhost"
+MYSQL_DB = "noops"
+JWT_SECRET_KEY = "supersecret"
