@@ -1,0 +1,93 @@
+{
+  "info": {
+    "_postman_id": "b1e1e1e1-1234-5678-9101-abcdefabcdef",
+    "name": "Agent SaaS API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register Agent",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"agent1\"}",
+          "options": {"raw": {"language": "json"}}
+        },
+        "url": {"raw": "{{base_url}}/api/agent/register", "host": ["{{base_url}}"], "path": ["api", "agent", "register"]}
+      }
+    },
+    {
+      "name": "Agent Heartbeat",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer <token>", "type": "text"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\": \"active\"}",
+          "options": {"raw": {"language": "json"}}
+        },
+        "url": {"raw": "{{base_url}}/api/agent/heartbeat", "host": ["{{base_url}}"], "path": ["api", "agent", "heartbeat"]}
+      }
+    },
+    {
+      "name": "Get Agent List (Admin)",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer <admin-token>", "type": "text"}],
+        "url": {"raw": "{{base_url}}/api/agent/s", "host": ["{{base_url}}"], "path": ["api", "agent", "s"]}
+      }
+    },
+    {
+      "name": "Send Command to Agent",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer <admin-token>", "type": "text"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"agent_id\": \"UUID\", \"command\": \"ls -la\"}",
+          "options": {"raw": {"language": "json"}}
+        },
+        "url": {"raw": "{{base_url}}/api/command", "host": ["{{base_url}}"], "path": ["api", "command"]}
+      }
+    },
+    {
+      "name": "Get Command Status",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer <admin-token>", "type": "text"}],
+        "url": {"raw": "{{base_url}}/api/command/{{command_id}}", "host": ["{{base_url}}"], "path": ["api", "command", "{{command_id}}"]}
+      }
+    },
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"john\", \"password\": \"secret\"}",
+          "options": {"raw": {"language": "json"}}
+        },
+        "url": {"raw": "{{base_url}}/api/user/register", "host": ["{{base_url}}"], "path": ["api", "user", "register"]}
+      }
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"john\", \"password\": \"secret\"}",
+          "options": {"raw": {"language": "json"}}
+        },
+        "url": {"raw": "{{base_url}}/api/user/login", "host": ["{{base_url}}"], "path": ["api", "user", "login"]}
+      }
+    }
+  ],
+  "variable": [
+    {"key": "base_url", "value": "localhost:8000"}
+  ]
+}
