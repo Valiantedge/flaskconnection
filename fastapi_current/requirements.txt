@@ -2,8 +2,4 @@ fastapi
 uvicorn
 sqlalchemy
 pymysql
-fastapi
-uvicorn
-sqlalchemy
-pymysql
 PyJWT
