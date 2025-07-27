@@ -10,18 +10,6 @@ class User(Base):
     username = Column(String(50), unique=True, index=True)
     password = Column(String(128))
 
-class Agent(Base):
-    __tablename__ = 'agents'
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), unique=True)
-    token = Column(String(128), unique=True)
-    status = Column(String(20), default='inactive')
-    last_heartbeat = Column(DateTime, default=datetime.utcnow)
-    customer_id = Column(Integer, nullable=True, index=True)
-    cluster_id = Column(Integer, nullable=True, index=True)
-    ip_address = Column(String(45), nullable=True, index=True)  # IPv6 max length
-    machine_uuid = Column(String(64), nullable=True, index=True)
-    os_type = Column(String(32), nullable=True, index=True)
 
 class Workspace(Base):
     __tablename__ = 'workspaces'
