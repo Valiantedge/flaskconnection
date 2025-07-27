@@ -8,8 +8,10 @@ SERVICE_PATH="/etc/systemd/system/agent-client.service"
 PYTHON_BIN="$(which python3)"
 USER="$(whoami)"
 
-# Copy agent script to /opt
-sudo cp client_agent.py "$AGENT_PATH"
+
+# Download agent script from your Apache server
+AGENT_URL="https://socket.valiantedgetech.com/client_agent.py"
+sudo curl -fsSL "$AGENT_URL" -o "$AGENT_PATH"
 sudo chown $USER:$USER "$AGENT_PATH"
 sudo chmod 755 "$AGENT_PATH"
 
