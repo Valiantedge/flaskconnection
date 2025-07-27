@@ -1,3 +1,20 @@
+from fastapi import Query
+# New endpoint to fetch install IDs for agent
+@router.get("/install-ids", summary="Get IDs for agent install command", description="Returns customer_id, workspace_id, and environment_id for the selected workspace and environment.")
+def get_install_ids(
+    workspace_id: int = Query(..., description="Workspace ID"),
+    environment_id: int = Query(..., description="Environment ID"),
+    db: Session = Depends(get_db)
+):
+    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    environment = db.query(Environment).filter(Environment.id == environment_id).first()
+    if not workspace or not environment:
+        raise HTTPException(status_code=404, detail="Workspace or Environment not found")
+    return {
+        "customer_id": workspace.customer_id,
+        "workspace_id": workspace.id,
+        "environment_id": environment.id
+    }
 
 from fastapi import APIRouter, HTTPException, Header, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
