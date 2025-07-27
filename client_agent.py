@@ -128,8 +128,8 @@ async def main():
         heartbeat_thread.start()
         ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
         print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
-        # Use 'headers' for compatibility with websockets <10
-        async with websockets.connect(ws_url, headers={"Authorization": f"Bearer {token}"}) as ws:
+        # Use 'extra_headers' for compatibility with your installed websockets version
+        async with websockets.connect(ws_url, extra_headers={"Authorization": f"Bearer {token}"}) as ws:
             print("[INFO] Connected to server", flush=True)
             while True:
                 message = await ws.recv()
