@@ -72,7 +72,7 @@ def register_agent(name):
         exit(1)
 
 async def main():
-    agent_name = "agent-001"  # Change as needed or make dynamic
+    agent_name = os.getenv("AGENT_NAME") or socket.gethostname()
     agent_id, token = register_agent(agent_name)
     if not agent_id or not token:
         print("[INFO] Skipping websocket connection due to missing credentials.")

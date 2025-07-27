@@ -17,7 +17,8 @@ def register_agent(name):
         exit(1)
 
 async def main():
-    agent_name = "agent-001"  # Change as needed or make dynamic
+    import os, socket
+    agent_name = os.getenv("AGENT_NAME") or socket.gethostname()
     agent_id, token = register_agent(agent_name)
     ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
     async with websockets.connect(ws_url, extra_headers={"Authorization": f"Bearer {token}"}) as ws:
