@@ -40,7 +40,6 @@ class Agent(Base):
     status = Column(String(20), default='inactive')
     last_heartbeat = Column(DateTime, default=datetime.utcnow)
     customer_id = Column(Integer, nullable=True, index=True)
-    cluster_id = Column(Integer, nullable=True, index=True)
     workspace_id = Column(Integer, ForeignKey('workspaces.id'), nullable=True, index=True)
     environment_id = Column(Integer, ForeignKey('environments.id'), nullable=True, index=True)
     ip_address = Column(String(45), nullable=True, index=True)  # IPv6 max length

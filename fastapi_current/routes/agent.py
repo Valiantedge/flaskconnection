@@ -109,7 +109,6 @@ def get_agents(
             "agent_id": a.id,
             "status": (a.status if a.last_heartbeat and (now - a.last_heartbeat) < offline_threshold else "offline"),
             "customer_id": a.customer_id,
-            "cluster_id": a.cluster_id,
             "ip_address": a.ip_address,
             "machine_uuid": a.machine_uuid,
             "os_type": a.os_type,
