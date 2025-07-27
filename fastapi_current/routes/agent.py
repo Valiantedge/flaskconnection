@@ -47,6 +47,14 @@ class AgentRegister(BaseModel):
 class AgentHeartbeat(BaseModel):
     status: str
 
+class WorkspaceCreate(BaseModel):
+    name: str
+    customer_id: int
+
+class EnvironmentCreate(BaseModel):
+    name: str
+    workspace_id: int
+
 @router.post(
     "/register",
     summary="Register a new agent",
@@ -109,4 +117,56 @@ def get_agents(
             "last_heartbeat": a.last_heartbeat.isoformat() if a.last_heartbeat else None
         }
         for a in agents
+    ]
+
+@router.post(
+    "/workspaces",
+    summary="Create a new workspace",
+    description="Create a new workspace for a customer. Requires a unique name and customer_id."
+)
+def create_workspace(workspace: WorkspaceCreate, db: Session = Depends(get_db)):
+    if db.query(Workspace).filter(Workspace.name == workspace.name).first():
+        raise HTTPException(status_code=400, detail="Workspace already exists")
+    new_workspace = Workspace(name=workspace.name, customer_id=workspace.customer_id)
+    db.add(new_workspace)
+    db.commit()
+    db.refresh(new_workspace)
+    return {"workspace_id": new_workspace.id, "name": new_workspace.name, "customer_id": new_workspace.customer_id}
+
+@router.post(
+    "/environments",
+    summary="Create a new environment",
+    description="Create a new environment within a workspace. Requires a unique name and workspace_id."
+)
+def create_environment(environment: EnvironmentCreate, db: Session = Depends(get_db)):
+    if db.query(Environment).filter(Environment.name == environment.name, Environment.workspace_id == environment.workspace_id).first():
+        raise HTTPException(status_code=400, detail="Environment already exists in this workspace")
+    new_env = Environment(name=environment.name, workspace_id=environment.workspace_id)
+    db.add(new_env)
+    db.commit()
+    db.refresh(new_env)
+    return {"environment_id": new_env.id, "name": new_env.name, "workspace_id": new_env.workspace_id}
+
+@router.get(
+    "/workspaces",
+    summary="List all workspaces",
+    description="Get a list of all workspaces with their IDs, names, and customer IDs."
+)
+def list_workspaces(db: Session = Depends(get_db)):
+    workspaces = db.query(Workspace).all()
+    return [
+        {"workspace_id": w.id, "name": w.name, "customer_id": w.customer_id}
+        for w in workspaces
+    ]
+
+@router.get(
+    "/environments",
+    summary="List all environments",
+    description="Get a list of all environments with their IDs, names, and workspace IDs."
+)
+def list_environments(db: Session = Depends(get_db)):
+    environments = db.query(Environment).all()
+    return [
+        {"environment_id": e.id, "name": e.name, "workspace_id": e.workspace_id}
+        for e in environments
     ]
