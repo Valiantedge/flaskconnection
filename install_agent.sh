@@ -8,10 +8,16 @@ SERVICE_PATH="/etc/systemd/system/agent-client.service"
 PYTHON_BIN="$(which python3)"
 USER="$(whoami)"
 
-# Prompt for required environment variables
-read -p "Enter CUSTOMER_ID: " CUSTOMER_ID
-read -p "Enter WORKSPACE_ID: " WORKSPACE_ID
-read -p "Enter ENVIRONMENT_ID: " ENVIRONMENT_ID
+# Use env vars if set, otherwise prompt (for manual install)
+if [ -z "$CUSTOMER_ID" ]; then
+  read -p "Enter CUSTOMER_ID: " CUSTOMER_ID
+fi
+if [ -z "$WORKSPACE_ID" ]; then
+  read -p "Enter WORKSPACE_ID: " WORKSPACE_ID
+fi
+if [ -z "$ENVIRONMENT_ID" ]; then
+  read -p "Enter ENVIRONMENT_ID: " ENVIRONMENT_ID
+fi
 
 # Ensure Python 3 is installed, then install python3-venv module depending on OS
 if ! command -v python3 >/dev/null 2>&1; then
