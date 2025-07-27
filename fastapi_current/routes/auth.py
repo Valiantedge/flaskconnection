@@ -39,8 +39,16 @@ def signup(signup: SignupRequest):
     db.add(admin_user)
     db.commit()
     db.refresh(admin_user)
+    # Fetch IDs before closing session
+    customer_id = customer.id
+    admin_user_id = admin_user.id
+    admin_username = admin_user.username
     db.close()
-    return {"customer_id": customer.id, "admin_user_id": admin_user.id, "admin_username": admin_user.username}
+    return {
+        "customer_id": customer_id,
+        "admin_user_id": admin_user_id,
+        "admin_username": admin_username
+    }
 
 class UserLogin(BaseModel):
     username: str
