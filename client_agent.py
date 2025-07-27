@@ -12,6 +12,7 @@ import uuid
 import os
 import threading
 import pathlib
+import sys
 
 API_URL = "https://socket.valiantedgetech.com/api/agent/register"
 HEARTBEAT_URL = "https://socket.valiantedgetech.com/api/agent/heartbeat"
@@ -24,11 +25,11 @@ def send_heartbeat(token):
             data = {"status": "active"}
             resp = requests.post(HEARTBEAT_URL, headers=headers, json=data, timeout=10)
             if resp.status_code == 200:
-                print("[INFO] Heartbeat sent.")
+                print("[INFO] Heartbeat sent.", flush=True)
             else:
-                print(f"[ERROR] Heartbeat failed: {resp.text}")
+                print(f"[ERROR] Heartbeat failed: {resp.text}", flush=True)
         except Exception as e:
-            print(f"[ERROR] Heartbeat exception: {e}")
+            print(f"[ERROR] Heartbeat exception: {e}", flush=True)
         # Wait 60 seconds before next heartbeat
         time.sleep(60)
 
@@ -112,24 +113,29 @@ def register_agent(name):
 
 async def main():
     import time
+    print("[DEBUG] Agent starting up...", flush=True)
     agent_name = os.getenv("AGENT_NAME") or socket.gethostname()
+    print(f"[DEBUG] Registering agent with name: {agent_name}", flush=True)
     agent_id, token = register_agent(agent_name)
     if not agent_id or not token:
-        print("[INFO] Skipping websocket connection due to missing credentials.")
+        print("[INFO] Skipping websocket connection due to missing credentials.", flush=True)
         while True:
             await asyncio.sleep(60)  # Stay alive, but do nothing
     else:
+        print(f"[DEBUG] Agent registered with id: {agent_id}", flush=True)
         # Start heartbeat thread
         heartbeat_thread = threading.Thread(target=send_heartbeat, args=(token,), daemon=True)
         heartbeat_thread.start()
         ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
-        async with websockets.connect(ws_url, extra_headers={"Authorization": f"Bearer {token}"}) as ws:
-            print("[INFO] Connected to server")
+        print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
+        # Use 'headers' for compatibility with websockets <10
+        async with websockets.connect(ws_url, headers={"Authorization": f"Bearer {token}"}) as ws:
+            print("[INFO] Connected to server", flush=True)
             while True:
                 message = await ws.recv()
                 data = json.loads(message)
                 command = data.get("command")
-                print(f"[INFO] Executing: {command}")
+                print(f"[INFO] Executing: {command}", flush=True)
                 try:
                     result = subprocess.run(command, shell=True, capture_output=True, text=True)
                     output = result.stdout + result.stderr
