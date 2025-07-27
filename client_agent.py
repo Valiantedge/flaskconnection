@@ -18,20 +18,7 @@ API_URL = "https://socket.valiantedgetech.com/api/agent/register"
 HEARTBEAT_URL = "https://socket.valiantedgetech.com/api/agent/heartbeat"
 WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/ws/agent/{agent_id}"
 CREDENTIALS_FILE = "agent_credentials.json"
-        async with websockets.connect(ws_url) as ws:
-    while True:
-        try:
-            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            data = {"status": "active"}
-            resp = requests.post(HEARTBEAT_URL, headers=headers, json=data, timeout=10)
-            if resp.status_code == 200:
-                print("[INFO] Heartbeat sent.", flush=True)
-            else:
-                print(f"[ERROR] Heartbeat failed: {resp.text}", flush=True)
-        except Exception as e:
-            print(f"[ERROR] Heartbeat exception: {e}", flush=True)
-        # Wait 60 seconds before next heartbeat
-        time.sleep(60)
+
 
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
