@@ -8,9 +8,10 @@ SERVICE_PATH="/etc/systemd/system/agent-client.service"
 PYTHON_BIN="$(which python3)"
 USER="$(whoami)"
 
-
-
-
+# Prompt for required environment variables
+read -p "Enter CUSTOMER_ID: " CUSTOMER_ID
+read -p "Enter WORKSPACE_ID: " WORKSPACE_ID
+read -p "Enter ENVIRONMENT_ID: " ENVIRONMENT_ID
 
 # Ensure Python 3 is installed, then install python3-venv module depending on OS
 if ! command -v python3 >/dev/null 2>&1; then
@@ -54,7 +55,7 @@ source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
 pip install websockets requests
 
-# Create systemd service file (correct block only)
+# Create systemd service file (with env vars)
 sudo tee "$SERVICE_PATH" > /dev/null <<EOF
 [Unit]
 Description=Python Agent Client
@@ -64,6 +65,9 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=/opt/
+Environment="CUSTOMER_ID=$CUSTOMER_ID"
+Environment="WORKSPACE_ID=$WORKSPACE_ID"
+Environment="ENVIRONMENT_ID=$ENVIRONMENT_ID"
 ExecStart=$VENV_PATH/bin/python $AGENT_PATH
 Restart=always
 
