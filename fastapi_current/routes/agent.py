@@ -16,6 +16,7 @@ class AgentRegister(BaseModel):
     name: str
     ip_address: str
     machine_uuid: str
+    os_type: str
 
 class AgentHeartbeat(BaseModel):
     status: str
@@ -37,7 +38,8 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
         token=token,
         status='active',
         ip_address=agent.ip_address,
-        machine_uuid=agent.machine_uuid
+        machine_uuid=agent.machine_uuid,
+        os_type=agent.os_type
     )
     db.add(new_agent)
     db.commit()
@@ -45,6 +47,8 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     return {"agent_id": new_agent.id, "token": token}
 
 @router.post("/heartbeat")
+from datetime import datetime, timedelta
+
 def agent_heartbeat(
     heartbeat: AgentHeartbeat,
     credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
@@ -55,6 +59,7 @@ def agent_heartbeat(
     if not agent:
         raise HTTPException(status_code=401, detail="Invalid token")
     agent.status = heartbeat.status
+    agent.last_heartbeat = datetime.utcnow()
     db.commit()
     return {"status": "ok"}
 
@@ -65,14 +70,18 @@ def get_agents(
 ):
     # For demo, no admin check
     agents = db.query(Agent).all()
+    now = datetime.utcnow()
+    offline_threshold = timedelta(minutes=2)
     return [
         {
             "agent_id": a.id,
-            "status": a.status,
+            "status": (a.status if a.last_heartbeat and (now - a.last_heartbeat) < offline_threshold else "offline"),
             "customer_id": a.customer_id,
             "cluster_id": a.cluster_id,
             "ip_address": a.ip_address,
-            "machine_uuid": a.machine_uuid
+            "machine_uuid": a.machine_uuid,
+            "os_type": a.os_type,
+            "last_heartbeat": a.last_heartbeat.isoformat() if a.last_heartbeat else None
         }
         for a in agents
     ]

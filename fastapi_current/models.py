@@ -21,6 +21,7 @@ class Agent(Base):
     cluster_id = Column(Integer, nullable=True, index=True)
     ip_address = Column(String(45), nullable=True, index=True)  # IPv6 max length
     machine_uuid = Column(String(64), nullable=True, index=True)
+    os_type = Column(String(32), nullable=True, index=True)
 
 class Command(Base):
     __tablename__ = 'commands'
