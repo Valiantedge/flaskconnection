@@ -17,6 +17,7 @@ class SignupRequest(BaseModel):
 class UserRegister(BaseModel):
     username: str
     password: str
+    customer_id: int
 @router.post("/signup", summary="Customer sign up (creates customer and admin user)")
 def signup(signup: SignupRequest):
     db: Session = SessionLocal()
@@ -52,17 +53,24 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(hours=1
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
-@router.post("/register")
+
+@router.post("/register", summary="Register a new user for a customer")
 def register_user(user: UserRegister):
     db: Session = SessionLocal()
     if db.query(User).filter(User.username == user.username).first():
         db.close()
         raise HTTPException(status_code=400, detail="Username already exists")
-    new_user = User(username=user.username, password=user.password)
+    # Check that the customer exists
+    from models import Customer
+    customer = db.query(Customer).filter(Customer.id == user.customer_id).first()
+    if not customer:
+        db.close()
+        raise HTTPException(status_code=404, detail="Customer not found")
+    new_user = User(username=user.username, password=user.password, customer_id=user.customer_id)
     db.add(new_user)
     db.commit()
     db.close()
-    return {"status": "created"}
+    return {"status": "created", "customer_id": user.customer_id}
 
 @router.post("/login")
 def login_user(user: UserLogin):
