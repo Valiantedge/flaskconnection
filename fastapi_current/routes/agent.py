@@ -56,4 +56,14 @@ def get_agents(
 ):
     # For demo, no admin check
     agents = db.query(Agent).all()
-    return [{"agent_id": a.id, "status": a.status} for a in agents]
+    return [
+        {
+            "agent_id": a.id,
+            "status": a.status,
+            "customer_id": a.customer_id,
+            "cluster_id": a.cluster_id,
+            "ip_address": a.ip_address,
+            "machine_uuid": a.machine_uuid
+        }
+        for a in agents
+    ]
