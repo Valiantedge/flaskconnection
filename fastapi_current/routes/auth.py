@@ -18,7 +18,7 @@ class UserRegister(BaseModel):
     username: str
     password: str
     customer_id: int
-@router.post("/signup", summary="Customer sign up (creates customer and admin user)")
+@router.post("/signup", summary="Customer sign up (creates customer and admin user)", tags=["1. User Sign Up"])
 def signup(signup: SignupRequest):
     db: Session = SessionLocal()
     # Check if customer already exists
@@ -54,7 +54,7 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(hours=1
     return encoded_jwt
 
 
-@router.post("/register", summary="Register a new user for a customer")
+@router.post("/register", summary="Register a new user for a customer", tags=["3. User Management"])
 def register_user(user: UserRegister):
     db: Session = SessionLocal()
     if db.query(User).filter(User.username == user.username).first():
@@ -72,7 +72,7 @@ def register_user(user: UserRegister):
     db.close()
     return {"status": "created", "customer_id": user.customer_id}
 
-@router.post("/login")
+@router.post("/login", tags=["2. User Sign In"])
 def login_user(user: UserLogin):
     db: Session = SessionLocal()
     db_user = db.query(User).filter(User.username == user.username, User.password == user.password).first()

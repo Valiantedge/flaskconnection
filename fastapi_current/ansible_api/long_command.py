@@ -9,7 +9,7 @@ router = APIRouter(dependencies=[Security(bearer_scheme)])
 class LongCommandRequest(BaseModel):
     command: str
 
-@router.post("/run")
+@router.post("/run", tags=["8. Ansible"])
 def run_long_command(req: LongCommandRequest, background_tasks: BackgroundTasks):
     def run_cmd():
         subprocess.run(req.command, shell=True)

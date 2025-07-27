@@ -19,7 +19,7 @@ def get_db():
         db.close()
 
 # New endpoint to fetch install IDs for agent
-@router.get("/install-ids", summary="Get IDs for agent install command", description="Returns customer_id, workspace_id, and environment_id for the selected workspace and environment.")
+@router.get("/install-ids", summary="Get IDs for agent install command", description="Returns customer_id, workspace_id, and environment_id for the selected workspace and environment.", tags=["5. Agent Management"])
 def get_install_ids(
     workspace_id: int = Query(..., description="Workspace ID"),
     environment_id: int = Query(..., description="Environment ID"),
@@ -57,7 +57,8 @@ class EnvironmentCreate(BaseModel):
 @router.post(
     "/register",
     summary="Register a new agent",
-    description="Register an agent with customer, workspace, and environment IDs. All fields are required: name, customer_id, workspace_id, environment_id, ip_address, machine_uuid, os_type."
+    description="Register an agent with customer, workspace, and environment IDs. All fields are required: name, customer_id, workspace_id, environment_id, ip_address, machine_uuid, os_type.",
+    tags=["5. Agent Management"]
 )
 def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     if db.query(Agent).filter(Agent.name == agent.name).first():
@@ -79,8 +80,7 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     db.refresh(new_agent)
     return {"agent_id": new_agent.id, "token": token}
 
-@router.post("/heartbeat")
-
+@router.post("/heartbeat", tags=["5. Agent Management"])
 def agent_heartbeat(
     heartbeat: AgentHeartbeat,
     credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
@@ -95,7 +95,7 @@ def agent_heartbeat(
     db.commit()
     return {"status": "ok"}
 
-@router.get("/s")
+@router.get("/s", tags=["5. Agent Management"])
 def get_agents(
     credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
     db: Session = Depends(get_db)
@@ -121,7 +121,8 @@ def get_agents(
 @router.post(
     "/workspaces",
     summary="Create a new workspace",
-    description="Create a new workspace for a customer. Uses the authenticated user's customer_id."
+    description="Create a new workspace for a customer. Uses the authenticated user's customer_id.",
+    tags=["4. Workspace & Environment"]
 )
 def create_workspace(
     workspace: WorkspaceCreate,
@@ -152,7 +153,8 @@ def create_workspace(
 @router.post(
     "/environments",
     summary="Create a new environment",
-    description="Create a new environment within a workspace. Requires a unique name and workspace_id."
+    description="Create a new environment within a workspace. Requires a unique name and workspace_id.",
+    tags=["4. Workspace & Environment"]
 )
 def create_environment(environment: EnvironmentCreate, db: Session = Depends(get_db)):
     if db.query(Environment).filter(Environment.name == environment.name, Environment.workspace_id == environment.workspace_id).first():
@@ -166,7 +168,8 @@ def create_environment(environment: EnvironmentCreate, db: Session = Depends(get
 @router.get(
     "/workspaces",
     summary="List all workspaces",
-    description="Get a list of all workspaces with their IDs, names, and customer IDs."
+    description="Get a list of all workspaces with their IDs, names, and customer IDs.",
+    tags=["4. Workspace & Environment"]
 )
 def list_workspaces(db: Session = Depends(get_db)):
     workspaces = db.query(Workspace).all()
@@ -178,7 +181,8 @@ def list_workspaces(db: Session = Depends(get_db)):
 @router.get(
     "/environments",
     summary="List all environments",
-    description="Get a list of all environments with their IDs, names, and workspace IDs."
+    description="Get a list of all environments with their IDs, names, and workspace IDs.",
+    tags=["4. Workspace & Environment"]
 )
 def list_environments(db: Session = Depends(get_db)):
     environments = db.query(Environment).all()
@@ -190,7 +194,8 @@ def list_environments(db: Session = Depends(get_db)):
 @router.get(
     "/customers/me",
     summary="Get current customer details",
-    description="Returns the customer details for the authenticated user."
+    description="Returns the customer details for the authenticated user.",
+    tags=["6. Customer Management"]
 )
 def get_customer_details(
     db: Session = Depends(get_db),

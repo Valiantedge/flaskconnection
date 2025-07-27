@@ -19,7 +19,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("")
+@router.post("", tags=["7. Command Execution"])
 def send_command(cmd: CommandRequest, Authorization: str = Header(...), db: Session = Depends(get_db)):
     agent = db.query(Agent).filter(Agent.id == cmd.agent_id).first()
     if not agent:
@@ -30,7 +30,7 @@ def send_command(cmd: CommandRequest, Authorization: str = Header(...), db: Sess
     db.refresh(new_cmd)
     return {"command_id": new_cmd.id, "status": "queued"}
 
-@router.get("/{command_id}")
+@router.get("/{command_id}", tags=["7. Command Execution"])
 def get_command_status(command_id: int, Authorization: str = Header(...), db: Session = Depends(get_db)):
     cmd = db.query(Command).filter(Command.id == command_id).first()
     if not cmd:
