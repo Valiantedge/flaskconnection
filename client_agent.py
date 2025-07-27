@@ -1,5 +1,6 @@
 
 
+
 import asyncio
 import websockets
 import json
@@ -9,9 +10,25 @@ import socket
 import platform
 import uuid
 import os
+import threading
 
 API_URL = "https://socket.valiantedgetech.com/api/agent/register"
+HEARTBEAT_URL = "https://socket.valiantedgetech.com/api/agent/heartbeat"
 WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/ws/agent/{agent_id}"
+def send_heartbeat(token):
+    while True:
+        try:
+            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+            data = {"status": "active"}
+            resp = requests.post(HEARTBEAT_URL, headers=headers, json=data, timeout=10)
+            if resp.status_code == 200:
+                print("[INFO] Heartbeat sent.")
+            else:
+                print(f"[ERROR] Heartbeat failed: {resp.text}")
+        except Exception as e:
+            print(f"[ERROR] Heartbeat exception: {e}")
+        # Wait 60 seconds before next heartbeat
+        time.sleep(60)
 
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -72,6 +89,7 @@ def register_agent(name):
         exit(1)
 
 async def main():
+    import time
     agent_name = os.getenv("AGENT_NAME") or socket.gethostname()
     agent_id, token = register_agent(agent_name)
     if not agent_id or not token:
@@ -79,6 +97,9 @@ async def main():
         while True:
             await asyncio.sleep(60)  # Stay alive, but do nothing
     else:
+        # Start heartbeat thread
+        heartbeat_thread = threading.Thread(target=send_heartbeat, args=(token,), daemon=True)
+        heartbeat_thread.start()
         ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
         async with websockets.connect(ws_url, extra_headers={"Authorization": f"Bearer {token}"}) as ws:
             print("[INFO] Connected to server")
