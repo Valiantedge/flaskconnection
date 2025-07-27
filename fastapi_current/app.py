@@ -8,7 +8,7 @@ from config import engine
 
 
 
-# Define OpenAPI tags for custom order in Swagger UI
+# Define OpenAPI tags for custom order in docs and ReDoc
 openapi_tags = [
     {"name": "1. User Sign Up", "description": "Customer sign up (creates customer and admin user)"},
     {"name": "2. User Sign In", "description": "Login User"},
@@ -20,7 +20,11 @@ openapi_tags = [
     {"name": "8. Ansible", "description": "Run long Ansible commands"},
 ]
 
-app = FastAPI(openapi_tags=openapi_tags)
+app = FastAPI(
+    openapi_tags=openapi_tags,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
 # Routers (ordered for logical SaaS onboarding flow)
 app.include_router(agent.router, prefix="/api/agent")
