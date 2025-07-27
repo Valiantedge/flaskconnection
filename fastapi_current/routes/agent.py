@@ -11,8 +11,11 @@ bearer_scheme = HTTPBearer()
 router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 
+
 class AgentRegister(BaseModel):
     name: str
+    ip_address: str
+    machine_uuid: str
 
 class AgentHeartbeat(BaseModel):
     status: str
@@ -29,7 +32,13 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     if db.query(Agent).filter(Agent.name == agent.name).first():
         raise HTTPException(status_code=400, detail="Agent already exists")
     token = str(uuid.uuid4())
-    new_agent = Agent(name=agent.name, token=token, status='active')
+    new_agent = Agent(
+        name=agent.name,
+        token=token,
+        status='active',
+        ip_address=agent.ip_address,
+        machine_uuid=agent.machine_uuid
+    )
     db.add(new_agent)
     db.commit()
     db.refresh(new_agent)
