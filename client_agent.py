@@ -1,3 +1,19 @@
+CREDENTIALS_FILE = "agent_credentials.json"
+
+def send_heartbeat(token):
+    import time
+    while True:
+        try:
+            headers = {"Content-Type": "application/json"}
+            data = {"status": "active"}
+            resp = requests.post(HEARTBEAT_URL, headers=headers, json=data, timeout=10)
+            if resp.status_code == 200:
+                print("[INFO] Heartbeat sent.", flush=True)
+            else:
+                print(f"[ERROR] Heartbeat failed: {resp.text}", flush=True)
+        except Exception as e:
+            print(f"[ERROR] Heartbeat exception: {e}", flush=True)
+        time.sleep(60)
 
 
 
