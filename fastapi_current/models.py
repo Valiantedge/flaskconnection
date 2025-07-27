@@ -17,6 +17,8 @@ class Agent(Base):
     token = Column(String(128), unique=True)
     status = Column(String(20), default='inactive')
     last_heartbeat = Column(DateTime, default=datetime.utcnow)
+    customer_id = Column(Integer, nullable=True, index=True)
+    cluster_id = Column(Integer, nullable=True, index=True)
 
 class Command(Base):
     __tablename__ = 'commands'
