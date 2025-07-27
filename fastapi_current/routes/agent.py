@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 # Add HTTPBearer security scheme
 bearer_scheme = HTTPBearer()
-router = APIRouter(dependencies=[Security(bearer_scheme)])
+router = APIRouter()
 
 def get_db():
     db = SessionLocal()
