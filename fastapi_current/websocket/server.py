@@ -19,14 +19,15 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: int):
     await websocket.accept()
     db = next(get_db())
     try:
-        # Authenticate agent by token in header
-        token = websocket.headers.get("authorization")
-        if not token:
-            await websocket.close()
-            return
-        if token.lower().startswith("bearer "):
-            token = token[7:]
-        agent = db.query(Agent).filter(Agent.id == agent_id, Agent.token == token).first()
+        # Authenticate agent by agent_id, customer_id, and environment_id
+        # Expect these as query parameters
+        customer_id = websocket.query_params.get("customer_id")
+        environment_id = websocket.query_params.get("environment_id")
+        agent = db.query(Agent).filter(
+            Agent.id == agent_id,
+            Agent.customer_id == customer_id,
+            Agent.environment_id == environment_id
+        ).first()
         if not agent:
             await websocket.close()
             return

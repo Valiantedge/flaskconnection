@@ -18,7 +18,7 @@ API_URL = "https://socket.valiantedgetech.com/api/agent/register"
 HEARTBEAT_URL = "https://socket.valiantedgetech.com/api/agent/heartbeat"
 WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/ws/agent/{agent_id}"
 CREDENTIALS_FILE = "agent_credentials.json"
-def send_heartbeat(token):
+        async with websockets.connect(ws_url) as ws:
     while True:
         try:
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -117,19 +117,23 @@ async def main():
     agent_name = os.getenv("AGENT_NAME") or socket.gethostname()
     print(f"[DEBUG] Registering agent with name: {agent_name}", flush=True)
     agent_id, token = register_agent(agent_name)
-    if not agent_id or not token:
+    if not agent_id:
         print("[INFO] Skipping websocket connection due to missing credentials.", flush=True)
         while True:
             await asyncio.sleep(60)  # Stay alive, but do nothing
     else:
         print(f"[DEBUG] Agent registered with id: {agent_id}", flush=True)
-        # Start heartbeat thread
+        # Start heartbeat thread (token is not needed for WebSocket)
         heartbeat_thread = threading.Thread(target=send_heartbeat, args=(token,), daemon=True)
         heartbeat_thread.start()
+        # Add customer_id and environment_id as query params
+        customer_id = os.getenv("CUSTOMER_ID")
+        environment_id = os.getenv("ENVIRONMENT_ID")
         ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
+        if customer_id and environment_id:
+            ws_url += f"?customer_id={customer_id}&environment_id={environment_id}"
         print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
-        # Use 'extra_headers' for compatibility with your installed websockets version
-        async with websockets.connect(ws_url, extra_headers=[("Authorization", f"Bearer {token}")]) as ws:
+        async with websockets.connect(ws_url) as ws:
             print("[INFO] Connected to server", flush=True)
             while True:
                 message = await ws.recv()
