@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, HTTPException, Header, Depends, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from models import Agent
 from config import SessionLocal
@@ -6,6 +7,9 @@ from pydantic import BaseModel
 import uuid
 
 router = APIRouter()
+
+# Add HTTPBearer security scheme
+bearer_scheme = HTTPBearer()
 
 class AgentRegister(BaseModel):
     name: str
@@ -32,8 +36,12 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     return {"agent_id": new_agent.id, "token": token}
 
 @router.post("/heartbeat")
-def agent_heartbeat(heartbeat: AgentHeartbeat, Authorization: str = Header(...), db: Session = Depends(get_db)):
-    token = Authorization.split()[1] if Authorization.startswith("Bearer ") else Authorization
+def agent_heartbeat(
+    heartbeat: AgentHeartbeat,
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+    db: Session = Depends(get_db)
+):
+    token = credentials.credentials
     agent = db.query(Agent).filter(Agent.token == token).first()
     if not agent:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -42,7 +50,10 @@ def agent_heartbeat(heartbeat: AgentHeartbeat, Authorization: str = Header(...),
     return {"status": "ok"}
 
 @router.get("/s")
-def get_agents(Authorization: str = Header(...), db: Session = Depends(get_db)):
+def get_agents(
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+    db: Session = Depends(get_db)
+):
     # For demo, no admin check
     agents = db.query(Agent).all()
     return [{"agent_id": a.id, "status": a.status} for a in agents]
