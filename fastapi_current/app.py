@@ -7,7 +7,20 @@ from models import Base
 from config import engine
 
 
-app = FastAPI()
+
+# Define OpenAPI tags for custom order in Swagger UI
+openapi_tags = [
+    {"name": "1. User Sign Up", "description": "Customer sign up (creates customer and admin user)"},
+    {"name": "2. User Sign In", "description": "Login User"},
+    {"name": "3. User Management", "description": "Register a new user for a customer"},
+    {"name": "4. Workspace & Environment", "description": "Workspace and environment management"},
+    {"name": "5. Agent Management", "description": "Agent registration and management"},
+    {"name": "6. Customer Management", "description": "Customer details"},
+    {"name": "7. Command Execution", "description": "Send and get command status"},
+    {"name": "8. Ansible", "description": "Run long Ansible commands"},
+]
+
+app = FastAPI(openapi_tags=openapi_tags)
 
 # Routers (ordered for logical SaaS onboarding flow)
 app.include_router(agent.router, prefix="/api/agent")
