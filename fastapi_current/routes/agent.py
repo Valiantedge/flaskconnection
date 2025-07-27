@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, HTTPException, Header, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -5,6 +6,7 @@ from models import Agent
 from config import SessionLocal
 from pydantic import BaseModel
 import uuid
+from datetime import datetime, timedelta
 
 # Add HTTPBearer security scheme
 bearer_scheme = HTTPBearer()
@@ -47,7 +49,6 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     return {"agent_id": new_agent.id, "token": token}
 
 @router.post("/heartbeat")
-from datetime import datetime, timedelta
 
 def agent_heartbeat(
     heartbeat: AgentHeartbeat,
