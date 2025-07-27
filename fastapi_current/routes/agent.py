@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header, Depends, Security, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from models import Agent, Workspace, Environment
+from models import Agent, Workspace, Environment, Customer
 from config import SessionLocal
 from pydantic import BaseModel
 import uuid
@@ -49,7 +49,6 @@ class AgentHeartbeat(BaseModel):
 
 class WorkspaceCreate(BaseModel):
     name: str
-    customer_id: int
 
 class EnvironmentCreate(BaseModel):
     name: str
@@ -122,12 +121,29 @@ def get_agents(
 @router.post(
     "/workspaces",
     summary="Create a new workspace",
-    description="Create a new workspace for a customer. Requires a unique name and customer_id."
+    description="Create a new workspace for a customer. Uses the authenticated user's customer_id."
 )
-def create_workspace(workspace: WorkspaceCreate, db: Session = Depends(get_db)):
+def create_workspace(
+    workspace: WorkspaceCreate,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)
+):
+    # Get username from JWT (adjust as needed for your auth logic)
+    import jwt
+    from config import JWT_SECRET_KEY
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    customer_id = user.customer_id
     if db.query(Workspace).filter(Workspace.name == workspace.name).first():
         raise HTTPException(status_code=400, detail="Workspace already exists")
-    new_workspace = Workspace(name=workspace.name, customer_id=workspace.customer_id)
+    new_workspace = Workspace(name=workspace.name, customer_id=customer_id)
     db.add(new_workspace)
     db.commit()
     db.refresh(new_workspace)
@@ -170,3 +186,33 @@ def list_environments(db: Session = Depends(get_db)):
         {"environment_id": e.id, "name": e.name, "workspace_id": e.workspace_id}
         for e in environments
     ]
+
+@router.get(
+    "/customers/me",
+    summary="Get current customer details",
+    description="Returns the customer details for the authenticated user."
+)
+def get_customer_details(
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)
+):
+    # Example: get username from JWT (adjust as needed for your auth logic)
+    import jwt
+    from config import JWT_SECRET_KEY
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Assume user has customer_id field
+    customer = db.query(Customer).filter(Customer.id == user.customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return {
+        "customer_id": customer.id,
+        "name": customer.name
+    }
