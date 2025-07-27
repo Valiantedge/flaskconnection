@@ -81,9 +81,17 @@ def register_agent(name):
     if resp.status_code == 200:
         data = resp.json()
         return data["agent_id"], data["token"]
-    elif resp.status_code == 400 and "Agent already exists" in resp.text:
-        print(f"[INFO] Agent already exists, continuing...")
-        return None, None
+    elif resp.status_code == 400 and "already exists" in resp.text.lower():
+        print("[INFO] Agent already registered. Attempting to fetch existing credentials or continue.")
+        # Optionally, fetch agent_id/token from a config file or environment variable
+        agent_id = os.getenv("AGENT_ID")
+        token = os.getenv("AGENT_TOKEN")
+        if agent_id and token:
+            print("[INFO] Using existing agent credentials from environment.")
+            return agent_id, token
+        else:
+            print("[ERROR] Agent already registered but no credentials found. Please set AGENT_ID and AGENT_TOKEN.")
+            return None, None
     else:
         print(f"[ERROR] Registration failed: {resp.text}")
         exit(1)
