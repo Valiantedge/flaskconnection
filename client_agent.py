@@ -11,10 +11,12 @@ import platform
 import uuid
 import os
 import threading
+import pathlib
 
 API_URL = "https://socket.valiantedgetech.com/api/agent/register"
 HEARTBEAT_URL = "https://socket.valiantedgetech.com/api/agent/heartbeat"
 WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/ws/agent/{agent_id}"
+CREDENTIALS_FILE = "agent_credentials.json"
 def send_heartbeat(token):
     while True:
         try:
@@ -80,17 +82,29 @@ def register_agent(name):
     resp = requests.post(API_URL, json=data)
     if resp.status_code == 200:
         data = resp.json()
-        return data["agent_id"], data["token"]
+        agent_id = data["agent_id"]
+        token = data["token"]
+        # Save credentials to file
+        with open(CREDENTIALS_FILE, "w") as f:
+            json.dump({"agent_id": agent_id, "token": token}, f)
+        print(f"[INFO] Registered agent: {agent_id} (credentials saved)")
+        return agent_id, token
     elif resp.status_code == 400 and "already exists" in resp.text.lower():
-        print("[INFO] Agent already registered. Attempting to fetch existing credentials or continue.")
-        # Optionally, fetch agent_id/token from a config file or environment variable
-        agent_id = os.getenv("AGENT_ID")
-        token = os.getenv("AGENT_TOKEN")
-        if agent_id and token:
-            print("[INFO] Using existing agent credentials from environment.")
-            return agent_id, token
+        print("[INFO] Agent already registered. Attempting to load credentials from file.")
+        cred_path = pathlib.Path(CREDENTIALS_FILE)
+        if cred_path.exists():
+            with open(CREDENTIALS_FILE, "r") as f:
+                creds = json.load(f)
+                agent_id = creds.get("agent_id")
+                token = creds.get("token")
+                if agent_id and token:
+                    print("[INFO] Loaded agent credentials from file.")
+                    return agent_id, token
+                else:
+                    print("[ERROR] Credentials file is missing agent_id or token.")
+                    return None, None
         else:
-            print("[ERROR] Agent already registered but no credentials found. Please set AGENT_ID and AGENT_TOKEN.")
+            print("[ERROR] Agent already registered but credentials file not found. Please re-register or clean up.")
             return None, None
     else:
         print(f"[ERROR] Registration failed: {resp.text}")
