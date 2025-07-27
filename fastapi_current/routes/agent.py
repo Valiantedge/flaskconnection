@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header, Depends, Security, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from models import Agent, Workspace, Environment, Customer
+from models import Agent, Workspace, Environment, Customer, User
 from config import SessionLocal
 from pydantic import BaseModel
 import uuid
