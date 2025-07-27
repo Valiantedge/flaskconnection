@@ -38,6 +38,7 @@ def get_db():
     summary="Register a new agent",
     description="Register an agent with customer, workspace, and environment IDs. All fields are required: name, customer_id, workspace_id, environment_id, ip_address, machine_uuid, os_type."
 )
+def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
     if db.query(Agent).filter(Agent.name == agent.name).first():
         raise HTTPException(status_code=400, detail="Agent already exists")
     token = str(uuid.uuid4())
