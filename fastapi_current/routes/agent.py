@@ -1,4 +1,23 @@
-from fastapi import Query
+from fastapi import APIRouter, HTTPException, Header, Depends, Security, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+from models import Agent, Workspace, Environment
+from config import SessionLocal
+from pydantic import BaseModel
+import uuid
+from datetime import datetime, timedelta
+
+# Add HTTPBearer security scheme
+bearer_scheme = HTTPBearer()
+router = APIRouter(dependencies=[Security(bearer_scheme)])
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # New endpoint to fetch install IDs for agent
 @router.get("/install-ids", summary="Get IDs for agent install command", description="Returns customer_id, workspace_id, and environment_id for the selected workspace and environment.")
 def get_install_ids(
@@ -16,21 +35,6 @@ def get_install_ids(
         "environment_id": environment.id
     }
 
-from fastapi import APIRouter, HTTPException, Header, Depends, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-from models import Agent
-from config import SessionLocal
-from pydantic import BaseModel
-import uuid
-from datetime import datetime, timedelta
-
-# Add HTTPBearer security scheme
-bearer_scheme = HTTPBearer()
-router = APIRouter(dependencies=[Security(bearer_scheme)])
-
-
-
 class AgentRegister(BaseModel):
     name: str
     customer_id: int
@@ -42,13 +46,6 @@ class AgentRegister(BaseModel):
 
 class AgentHeartbeat(BaseModel):
     status: str
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post(
     "/register",
