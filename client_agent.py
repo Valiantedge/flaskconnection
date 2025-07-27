@@ -20,7 +20,9 @@ def send_heartbeat(token):
                 "environment_id": int(environment_id) if environment_id else None,
                 "status": "active"
             }
+            print(f"[DEBUG] Heartbeat payload: {data}")
             resp = requests.post(HEARTBEAT_URL, headers=headers, json=data, timeout=10)
+            print(f"[DEBUG] Heartbeat response: {resp.status_code} {resp.text}")
             if resp.status_code == 200:
                 print("[INFO] Heartbeat sent.", flush=True)
             else:
@@ -97,7 +99,9 @@ def register_agent(name):
         "machine_uuid": get_machine_uuid(),
         "os_type": get_os_type(),
     }
+    print(f"[DEBUG] Registration payload: {data}")
     resp = requests.post(API_URL, json=data)
+    print(f"[DEBUG] Registration response: {resp.status_code} {resp.text}")
     if resp.status_code == 200:
         data = resp.json()
         agent_id = data["agent_id"]
