@@ -2,10 +2,24 @@ CREDENTIALS_FILE = "agent_credentials.json"
 
 def send_heartbeat(token):
     import time
+    # Load agent_id, customer_id, environment_id from env or credentials
+    try:
+        with open(CREDENTIALS_FILE, "r") as f:
+            creds = json.load(f)
+            agent_id = creds.get("agent_id")
+    except Exception:
+        agent_id = None
+    customer_id = os.getenv("CUSTOMER_ID")
+    environment_id = os.getenv("ENVIRONMENT_ID")
     while True:
         try:
             headers = {"Content-Type": "application/json"}
-            data = {"status": "active"}
+            data = {
+                "agent_id": int(agent_id) if agent_id else None,
+                "customer_id": int(customer_id) if customer_id else None,
+                "environment_id": int(environment_id) if environment_id else None,
+                "status": "active"
+            }
             resp = requests.post(HEARTBEAT_URL, headers=headers, json=data, timeout=10)
             if resp.status_code == 200:
                 print("[INFO] Heartbeat sent.", flush=True)

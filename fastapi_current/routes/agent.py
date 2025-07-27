@@ -44,7 +44,11 @@ class AgentRegister(BaseModel):
     machine_uuid: str
     os_type: str
 
+
 class AgentHeartbeat(BaseModel):
+    agent_id: int
+    customer_id: int
+    environment_id: int
     status: str
 
 class WorkspaceCreate(BaseModel):
@@ -83,13 +87,15 @@ def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
 @router.post("/heartbeat", tags=["5. Agent Management"])
 def agent_heartbeat(
     heartbeat: AgentHeartbeat,
-    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
     db: Session = Depends(get_db)
 ):
-    token = credentials.credentials
-    agent = db.query(Agent).filter(Agent.token == token).first()
+    agent = db.query(Agent).filter(
+        Agent.id == heartbeat.agent_id,
+        Agent.customer_id == heartbeat.customer_id,
+        Agent.environment_id == heartbeat.environment_id
+    ).first()
     if not agent:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid agent credentials")
     agent.status = heartbeat.status
     agent.last_heartbeat = datetime.utcnow()
     db.commit()
