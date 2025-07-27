@@ -16,6 +16,9 @@ router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 class AgentRegister(BaseModel):
     name: str
+    customer_id: int
+    workspace_id: int
+    environment_id: int
     ip_address: str
     machine_uuid: str
     os_type: str
@@ -30,13 +33,19 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/register")
-def register_agent(agent: AgentRegister, db: Session = Depends(get_db)):
+@router.post(
+    "/register",
+    summary="Register a new agent",
+    description="Register an agent with customer, workspace, and environment IDs. All fields are required: name, customer_id, workspace_id, environment_id, ip_address, machine_uuid, os_type."
+)
     if db.query(Agent).filter(Agent.name == agent.name).first():
         raise HTTPException(status_code=400, detail="Agent already exists")
     token = str(uuid.uuid4())
     new_agent = Agent(
         name=agent.name,
+        customer_id=agent.customer_id,
+        workspace_id=agent.workspace_id,
+        environment_id=agent.environment_id,
         token=token,
         status='active',
         ip_address=agent.ip_address,
