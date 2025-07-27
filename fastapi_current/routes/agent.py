@@ -6,10 +6,10 @@ from config import SessionLocal
 from pydantic import BaseModel
 import uuid
 
-router = APIRouter()
-
 # Add HTTPBearer security scheme
 bearer_scheme = HTTPBearer()
+router = APIRouter(dependencies=[Security(bearer_scheme)])
+
 
 class AgentRegister(BaseModel):
     name: str

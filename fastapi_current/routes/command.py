@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, HTTPException, Header, Depends, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from models import Command, Agent
 from config import SessionLocal
 from pydantic import BaseModel
 
-router = APIRouter()
+bearer_scheme = HTTPBearer()
+router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 class CommandRequest(BaseModel):
     agent_id: int

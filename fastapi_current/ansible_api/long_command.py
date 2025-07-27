@@ -1,8 +1,10 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import subprocess
 
-router = APIRouter()
+bearer_scheme = HTTPBearer()
+router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 class LongCommandRequest(BaseModel):
     command: str
