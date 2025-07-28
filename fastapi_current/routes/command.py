@@ -13,11 +13,7 @@ bearer_scheme = HTTPBearer()
 router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 
-@router.post("", tags=["7. Command Execution"])
-def send_command(cmd: CommandRequest, Authorization: str = Header(...), db: Session = Depends(get_db)):
-    agent = db.query(Agent).filter(Agent.id == cmd.agent_id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+
 
 # Endpoint for agent to report command output
 class CommandOutputReport(BaseModel):
@@ -34,9 +30,16 @@ def report_command_output(report: CommandOutputReport, db: Session = Depends(get
     db.commit()
     return {"status": "ok"}
 
+
 class CommandRequest(BaseModel):
     agent_id: int
     command: str
+
+@router.post("", tags=["7. Command Execution"])
+def send_command(cmd: CommandRequest, Authorization: str = Header(...), db: Session = Depends(get_db)):
+    agent = db.query(Agent).filter(Agent.id == cmd.agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
     new_cmd = Command(agent_id=cmd.agent_id, command=cmd.command, status="queued")
     db.add(new_cmd)
     db.commit()
