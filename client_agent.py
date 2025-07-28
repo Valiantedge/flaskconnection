@@ -202,20 +202,24 @@ async def main():
             ws_url += f"?customer_id={customer_id}&environment_id={environment_id}"
         while True:
             try:
-                print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
-                async with websockets.connect(ws_url) as ws:
-                    print("[INFO] Connected to server", flush=True)
-                    while True:
-                        message = await ws.recv()
-                        data = json.loads(message)
-                        command = data.get("command")
-                        print(f"[INFO] Executing: {command}", flush=True)
-                        try:
-                            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                            output = result.stdout + result.stderr
-                            await ws.send(json.dumps({"output": output}))
-                        except Exception as e:
-                            await ws.send(json.dumps({"output": str(e)}))
+        print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
+        async with websockets.connect(ws_url) as ws:
+            print("[INFO] Connected to server", flush=True)
+            while True:
+                message = await ws.recv()
+                data = json.loads(message)
+                command = data.get("command")
+                print(f"[INFO] Executing: {command}", flush=True)
+                try:
+                    # Stream output line by line
+                    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                    for line in process.stdout:
+                        await ws.send(json.dumps({"output": line, "end": False}))
+                    process.stdout.close()
+                    process.wait()
+                    await ws.send(json.dumps({"output": "", "end": True}))
+                except Exception as e:
+                    await ws.send(json.dumps({"output": str(e), "end": True}))
             except Exception as e:
                 print(f"[ERROR] WebSocket connection failed: {e}. Retrying in 10 seconds...", flush=True)
                 await asyncio.sleep(10)

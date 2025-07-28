@@ -40,12 +40,20 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: int):
                 await websocket.send_text(json.dumps({"command": cmd.command}))
                 cmd.status = 'running'
                 db.commit()
-                # Wait for output
+                # Stream output
+                output_accum = ""
                 try:
-                    msg = await websocket.receive_text()
-                    response = json.loads(msg)
+                    while True:
+                        msg = await websocket.receive_text()
+                        response = json.loads(msg)
+                        chunk = response.get('output', '')
+                        end = response.get('end', False)
+                        output_accum += chunk
+                        # Optionally, print or forward chunk here for live UI
+                        if end:
+                            break
                     cmd.status = 'completed'
-                    cmd.output = response.get('output', '')
+                    cmd.output = output_accum
                     db.commit()
                 except Exception as e:
                     print(f"[ERROR] Failed to receive output: {e}")
