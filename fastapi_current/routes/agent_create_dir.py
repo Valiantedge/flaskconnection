@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Body, Depends
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from models import Command
 from config import SessionLocal
 import subprocess
+import asyncio
 
 router = APIRouter()
 
@@ -49,3 +50,26 @@ async def run_command(payload: dict = Body(...), db=Depends(get_db)):
         return output
     except Exception as e:
         return str(e)
+
+@router.post("/api/agent/stream-command")
+async def stream_command(payload: dict = Body(...)):
+    command = payload.get("command")
+    if not command or not isinstance(command, str):
+        async def error_gen():
+            yield "Missing or invalid 'command' field (must be a string)\n"
+        return StreamingResponse(error_gen(), media_type="text/plain")
+
+    async def run_and_stream():
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        while True:
+            line = await process.stdout.readline()
+            if not line:
+                break
+            yield line.decode()
+        await process.wait()
+
+    return StreamingResponse(run_and_stream(), media_type="text/plain")
