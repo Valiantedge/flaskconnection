@@ -4,9 +4,10 @@ from fastapi import Request
 import asyncio
 
 # Import the connected_agents dict from websocket.server
-from websocket.server import connected_agents
+from websocket.server import send_command_to_agent
 
 router = APIRouter()
+
 
 @router.post("/send-command/{agent_id}")
 async def send_command(agent_id: int, body: dict = Body(...)):
@@ -17,18 +18,10 @@ async def send_command(agent_id: int, body: dict = Body(...)):
         return {"error": "Missing or invalid 'command' field (must be a string)"}
     if customer_id is None or environment_id is None:
         return {"error": "customer_id and environment_id are required"}
-    key = (agent_id, customer_id, environment_id)
-    agent_ws = connected_agents.get(key)
-    if not agent_ws:
-        print(f"[DEBUG] Connected agent keys: {list(connected_agents.keys())}")
-        return {"error": f"Agent {key} is not connected", "connected_keys": list(connected_agents.keys())}
 
-    async def stream_output():
-        await agent_ws.send_json({"command": command})
-        while True:
-            msg = await agent_ws.receive_text()
-            if msg == "[END]":
-                break
-            yield msg
-
-    return StreamingResponse(stream_output(), media_type="text/plain")
+    # Use the new send_command_to_agent function
+    success, result = await send_command_to_agent(agent_id, customer_id, environment_id, command)
+    if not success:
+        return {"error": result}
+    # Beautify output: wrap in a JSON object
+    return {"output": result}
