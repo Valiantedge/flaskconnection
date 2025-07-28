@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from models import Command
 from config import SessionLocal
@@ -73,3 +73,28 @@ async def stream_command(payload: dict = Body(...)):
         await process.wait()
 
     return StreamingResponse(run_and_stream(), media_type="text/plain")
+
+@router.websocket("/api/agent/ws-command")
+async def websocket_command(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_json()
+            command = data.get("command")
+            if not command or not isinstance(command, str):
+                await websocket.send_text("Missing or invalid 'command' field (must be a string)\n")
+                continue
+            process = await asyncio.create_subprocess_shell(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            while True:
+                line = await process.stdout.readline()
+                if not line:
+                    break
+                await websocket.send_text(line.decode())
+            await process.wait()
+            await websocket.send_text("[END]\n")
+    except WebSocketDisconnect:
+        pass
