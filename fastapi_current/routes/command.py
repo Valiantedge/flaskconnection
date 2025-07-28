@@ -1,9 +1,17 @@
 
 
-# Endpoint for agent to report command output
-from fastapi import Body
+bearer_scheme = HTTPBearer()
+from fastapi import APIRouter, HTTPException, Header, Depends, Security, Body
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+from models import Command, Agent
+from config import SessionLocal
 from pydantic import BaseModel
 
+bearer_scheme = HTTPBearer()
+router = APIRouter(dependencies=[Security(bearer_scheme)])
+
+# Endpoint for agent to report command output
 class CommandOutputReport(BaseModel):
     command_id: int
     output: str
@@ -17,15 +25,6 @@ def report_command_output(report: CommandOutputReport, db: Session = Depends(get
     cmd.status = "completed"
     db.commit()
     return {"status": "ok"}
-from fastapi import APIRouter, HTTPException, Header, Depends, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-from models import Command, Agent
-from config import SessionLocal
-from pydantic import BaseModel
-
-bearer_scheme = HTTPBearer()
-router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 class CommandRequest(BaseModel):
     agent_id: int
