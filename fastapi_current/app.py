@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import auth, agent, command, agent_test, agent_create_dir  # Import agent_test and agent_create_dir routers
+from routes import auth, agent, command, agent_test, agent_create_dir, agent_next_command  # Import agent_next_command router
 from websocket import server as ws_server
 from ansible_api import long_command
 
@@ -34,6 +34,7 @@ app.include_router(long_command.router, prefix="/api/ansible")
 app.include_router(ws_server.router)
 app.include_router(agent_test.router)  # Include agent_test router
 app.include_router(agent_create_dir.router)  # Register the new endpoint
+app.include_router(agent_next_command.router)  # Register the next-command endpoint
 
 # Automatically create tables if they do not exist
 Base.metadata.create_all(engine)
