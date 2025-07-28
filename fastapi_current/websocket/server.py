@@ -33,6 +33,13 @@ async def ui_websocket(websocket: WebSocket, agent_id: int):
 @router.websocket("/ws/agent/{agent_id}")
 async def websocket_endpoint(websocket: WebSocket, agent_id: int):
     await websocket.accept()
+    # Register agent in connected_agents for live command streaming compatibility
+    try:
+        from fastapi_current.routes.agent_create_dir import connected_agents
+    except ImportError:
+        connected_agents = None
+    if connected_agents is not None:
+        connected_agents[agent_id] = websocket
     db = next(get_db())
     try:
         # Authenticate agent by agent_id, customer_id, and environment_id
@@ -82,5 +89,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: int):
                 await asyncio.sleep(2)
     except WebSocketDisconnect:
         print(f"[INFO] Agent {agent_id} disconnected.")
+        if connected_agents is not None:
+            connected_agents.pop(agent_id, None)
     finally:
         db.close()
