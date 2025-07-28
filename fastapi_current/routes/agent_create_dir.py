@@ -34,19 +34,20 @@ async def run_command(payload: dict = Body(...)):
         return {"status": "error", "detail": f"Missing fields: {', '.join(missing)}"}
     if not isinstance(command, str):
         return {"status": "error", "detail": "'command' must be a string"}
+
+
     agent_ws = connected_agents.get(int(agent_id))
     print(f"[DEBUG] connected_agents keys: {list(connected_agents.keys())}", flush=True)
-    if not agent_ws:
-        print(f"[ERROR] Agent {agent_id} is not connected (connected_agents={list(connected_agents.keys())})", flush=True)
-        return {"status": "error", "detail": f"Agent {agent_id} is not connected"}
-
     async def stream_from_agent():
-        await agent_ws.send_json({"command": command})
-        while True:
-            msg = await agent_ws.receive_text()
-            if msg == "[END]":
-                break
-            yield msg
+        try:
+            await agent_ws.send_json({"command": command})
+            while True:
+                msg = await agent_ws.receive_text()
+                if msg == "[END]":
+                    break
+                yield msg
+        except Exception as e:
+            yield f"[ERROR] Could not send command or receive output: {e}\n"
 
     return StreamingResponse(stream_from_agent(), media_type="text/plain")
 
