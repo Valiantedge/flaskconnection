@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from routes import auth, agent, command, agent_test, agent_create_dir, agent_next_command  # Import agent_next_command router
 from websocket import server as ws_server
 from ansible_api import long_command
+from ansible_api import simple_command
 
 from models import Base
 from config import engine
@@ -31,6 +32,7 @@ app.include_router(agent.router, prefix="/api/agent")
 app.include_router(auth.router, prefix="/api/user")
 app.include_router(command.router, prefix="/api/command")
 app.include_router(long_command.router, prefix="/api/ansible")
+app.include_router(simple_command.router)
 app.include_router(ws_server.router)
 app.include_router(agent_test.router)  # Include agent_test router
 app.include_router(agent_create_dir.router, prefix="/api/agent")  # Register the new endpoint with correct prefix
