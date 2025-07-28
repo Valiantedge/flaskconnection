@@ -35,9 +35,3 @@ async def create_directory(payload: dict = Body(...)):
     db.commit()
     db.refresh(cmd)
     return {"status": "queued", "command_id": cmd.id, "agent_id": agent_id, "customer_id": customer_id, "environment_id": environment_id, "path": path}
-        return {"status": "error", "detail": "Missing or invalid 'path'"}
-    try:
-        os.makedirs(path, exist_ok=True)
-        return {"status": "success", "created": path}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
