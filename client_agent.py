@@ -213,13 +213,13 @@ async def main():
                         command = data.get("command")
                         print(f"[INFO] Executing: {command}", flush=True)
                         try:
-                            # Stream output line by line as JSON chunks
+                            # Stream output line by line as plain text, then send [END]
                             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
                             for line in process.stdout:
-                                await ws.send(json.dumps({"output": line, "end": False}))
+                                await ws.send(line.rstrip('\n'))
                             process.stdout.close()
                             process.wait()
-                            await ws.send(json.dumps({"output": "", "end": True}))
+                            await ws.send("[END]")
                         except Exception as e:
                             await ws.send(json.dumps({"output": str(e), "end": True}))
             except Exception as e:
