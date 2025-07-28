@@ -5,7 +5,14 @@ from config import SessionLocal
 import subprocess
 import asyncio
 
+
+from fastapi import Request
+from typing import Dict
+
 router = APIRouter()
+
+# Track connected agent websockets in memory
+connected_agents: Dict[int, WebSocket] = {}
 
 # Add missing get_db function
 def get_db():
@@ -50,16 +57,51 @@ async def run_command(payload: dict = Body(...)):
     if not isinstance(command, str):
         return {"status": "error", "detail": "'command' must be a string"}
     db = next(get_db())
-    # Store the command for the agent to pick up
+    # Store the command for the agent to pick up and for tracking
     cmd = Command(
         agent_id=agent_id,
         command=command,
-        status="queued"
+        status="queued",
+        customer_id=customer_id,
+        environment_id=environment_id
     )
     db.add(cmd)
     db.commit()
     db.refresh(cmd)
-    return {"status": "queued", "command_id": cmd.id, "agent_id": agent_id, "customer_id": customer_id, "environment_id": environment_id, "command": command}
+    return {
+        "status": "queued",
+        "command_id": cmd.id,
+        "agent_id": agent_id,
+        "customer_id": customer_id,
+        "environment_id": environment_id,
+        "command": command
+    }
+
+# New endpoint: stream output for a command by command_id (SaaS style)
+@router.get("/api/agent/stream-output/{command_id}")
+async def stream_output(command_id: int):
+    db = next(get_db())
+    cmd = db.query(Command).filter_by(id=command_id).first()
+    if not cmd:
+        async def error_gen():
+            yield f"No such command_id: {command_id}\n"
+        return StreamingResponse(error_gen(), media_type="text/plain")
+    agent_ws = connected_agents.get(int(cmd.agent_id))
+    if not agent_ws:
+        async def error_gen():
+            yield f"Agent {cmd.agent_id} is not connected\n"
+        return StreamingResponse(error_gen(), media_type="text/plain")
+
+    async def stream_from_agent():
+        # Send command to agent
+        await agent_ws.send_json({"command": cmd.command})
+        while True:
+            msg = await agent_ws.receive_text()
+            if msg == "[END]":
+                break
+            yield msg
+
+    return StreamingResponse(stream_from_agent(), media_type="text/plain")
 
 @router.post("/api/agent/stream-command")
 async def stream_command(payload: dict = Body(...)):
@@ -84,9 +126,10 @@ async def stream_command(payload: dict = Body(...)):
 
     return StreamingResponse(run_and_stream(), media_type="text/plain")
 
-@router.websocket("/api/agent/ws-command")
-async def websocket_command(websocket: WebSocket):
+@router.websocket("/api/agent/ws-command/{agent_id}")
+async def websocket_command(websocket: WebSocket, agent_id: int):
     await websocket.accept()
+    connected_agents[agent_id] = websocket
     try:
         while True:
             data = await websocket.receive_json()
@@ -105,6 +148,8 @@ async def websocket_command(websocket: WebSocket):
                     break
                 await websocket.send_text(line.decode())
             await process.wait()
-            await websocket.send_text("[END]\n")
+            await websocket.send_text("[END]")
     except WebSocketDisconnect:
         pass
+    finally:
+        connected_agents.pop(agent_id, None)
