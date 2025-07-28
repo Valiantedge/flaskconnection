@@ -22,7 +22,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/api/agent/create-directory")
+@router.post("/create-directory")
 async def create_directory(payload: dict = Body(...)):
     agent_id = payload.get("agent_id")
     customer_id = payload.get("customer_id")
@@ -45,7 +45,7 @@ async def create_directory(payload: dict = Body(...)):
     db.refresh(cmd)
     return {"status": "queued", "command_id": cmd.id, "agent_id": agent_id, "customer_id": customer_id, "environment_id": environment_id, "path": path}
 
-@router.post("/api/agent/run-command")
+@router.post("/run-command")
 async def run_command(payload: dict = Body(...)):
     agent_id = payload.get("agent_id")
     command = payload.get("command")
@@ -69,7 +69,7 @@ async def run_command(payload: dict = Body(...)):
     return StreamingResponse(stream_from_agent(), media_type="text/plain")
 
 # New endpoint: stream output for a command by command_id (SaaS style)
-@router.get("/api/agent/stream-output/{command_id}")
+@router.get("/stream-output/{command_id}")
 async def stream_output(command_id: int):
     db = next(get_db())
     cmd = db.query(Command).filter_by(id=command_id).first()
@@ -94,7 +94,7 @@ async def stream_output(command_id: int):
 
     return StreamingResponse(stream_from_agent(), media_type="text/plain")
 
-@router.post("/api/agent/stream-command")
+@router.post("/stream-command")
 async def stream_command(payload: dict = Body(...)):
     command = payload.get("command")
     if not command or not isinstance(command, str):
