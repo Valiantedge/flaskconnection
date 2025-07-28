@@ -36,13 +36,12 @@ async def run_command(payload: dict = Body(...)):
         return {"status": "error", "detail": "'command' must be a string"}
 
 
-    agent_ws = connected_agents.get(int(agent_id))
-    print(f"[DEBUG] connected_agents keys: {list(connected_agents.keys())}", flush=True)
     async def stream_from_agent():
         try:
-            await agent_ws.send_json({"command": command})
+            # Always try to send the command, regardless of agent_ws state
+            await connected_agents.get(int(agent_id)).send_json({"command": command})
             while True:
-                msg = await agent_ws.receive_text()
+                msg = await connected_agents.get(int(agent_id)).receive_text()
                 if msg == "[END]":
                     break
                 yield msg
