@@ -17,14 +17,19 @@ def get_db():
 # Store connected UI/admin clients
 ui_clients = set()
 
-# Track connected agent websockets in memory
+
+# Track connected agent websockets in memory, keyed by (agent_id, customer_id, environment_id)
 connected_agents = {}
 
+
+from fastapi import Query
+
 @router.websocket("/ws/agent/{agent_id}")
-async def websocket_command(websocket: WebSocket, agent_id: int):
+async def websocket_command(websocket: WebSocket, agent_id: int, customer_id: int = Query(...), environment_id: int = Query(...)):
     await websocket.accept()
-    connected_agents[agent_id] = websocket
-    print(f"[DEBUG] Agent {agent_id} connected via websocket. connected_agents={list(connected_agents.keys())}", flush=True)
+    key = (agent_id, customer_id, environment_id)
+    connected_agents[key] = websocket
+    print(f"[DEBUG] Agent {key} connected via websocket. connected_agents={list(connected_agents.keys())}", flush=True)
     try:
         while True:
             data = await websocket.receive_json()
@@ -32,7 +37,7 @@ async def websocket_command(websocket: WebSocket, agent_id: int):
             if not command or not isinstance(command, str):
                 await websocket.send_text("Missing or invalid 'command' field (must be a string)\n")
                 continue
-            print(f"[DEBUG] Executing command for agent {agent_id}: {command}", flush=True)
+            print(f"[DEBUG] Executing command for agent {key}: {command}", flush=True)
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
@@ -46,11 +51,11 @@ async def websocket_command(websocket: WebSocket, agent_id: int):
             await process.wait()
             await websocket.send_text("[END]")
     except WebSocketDisconnect:
-        print(f"[DEBUG] Agent {agent_id} disconnected from websocket.", flush=True)
+        print(f"[DEBUG] Agent {key} disconnected from websocket.", flush=True)
         pass
     finally:
-        connected_agents.pop(agent_id, None)
-        print(f"[DEBUG] Agent {agent_id} removed from connected_agents. connected_agents={list(connected_agents.keys())}", flush=True)
+        connected_agents.pop(key, None)
+        print(f"[DEBUG] Agent {key} removed from connected_agents. connected_agents={list(connected_agents.keys())}", flush=True)
 
 @router.websocket("/ws/ui/{agent_id}")
 async def ui_websocket(websocket: WebSocket, agent_id: int):
