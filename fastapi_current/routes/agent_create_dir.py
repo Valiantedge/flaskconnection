@@ -48,34 +48,25 @@ async def create_directory(payload: dict = Body(...)):
 @router.post("/api/agent/run-command")
 async def run_command(payload: dict = Body(...)):
     agent_id = payload.get("agent_id")
-    customer_id = payload.get("customer_id")
-    environment_id = payload.get("environment_id")
     command = payload.get("command")
-    missing = [k for k in ("agent_id", "customer_id", "environment_id", "command") if not payload.get(k)]
+    missing = [k for k in ("agent_id", "command") if not payload.get(k)]
     if missing:
         return {"status": "error", "detail": f"Missing fields: {', '.join(missing)}"}
     if not isinstance(command, str):
         return {"status": "error", "detail": "'command' must be a string"}
-    db = next(get_db())
-    # Store the command for the agent to pick up and for tracking
-    cmd = Command(
-        agent_id=agent_id,
-        command=command,
-        status="queued",
-        customer_id=customer_id,
-        environment_id=environment_id
-    )
-    db.add(cmd)
-    db.commit()
-    db.refresh(cmd)
-    return {
-        "status": "queued",
-        "command_id": cmd.id,
-        "agent_id": agent_id,
-        "customer_id": customer_id,
-        "environment_id": environment_id,
-        "command": command
-    }
+    agent_ws = connected_agents.get(int(agent_id))
+    if not agent_ws:
+        return {"status": "error", "detail": f"Agent {agent_id} is not connected"}
+
+    async def stream_from_agent():
+        await agent_ws.send_json({"command": command})
+        while True:
+            msg = await agent_ws.receive_text()
+            if msg == "[END]":
+                break
+            yield msg
+
+    return StreamingResponse(stream_from_agent(), media_type="text/plain")
 
 # New endpoint: stream output for a command by command_id (SaaS style)
 @router.get("/api/agent/stream-output/{command_id}")
