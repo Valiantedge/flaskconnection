@@ -1,3 +1,20 @@
+
+# Endpoint for agent to report command output
+from fastapi import Body
+
+class CommandOutputReport(BaseModel):
+    command_id: int
+    output: str
+
+@router.post("/report-output", tags=["7. Command Execution"])
+def report_command_output(report: CommandOutputReport, db: Session = Depends(get_db)):
+    cmd = db.query(Command).filter(Command.id == report.command_id).first()
+    if not cmd:
+        raise HTTPException(status_code=404, detail="Command not found")
+    cmd.output = report.output
+    cmd.status = "completed"
+    db.commit()
+    return {"status": "ok"}
 from fastapi import APIRouter, HTTPException, Header, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
