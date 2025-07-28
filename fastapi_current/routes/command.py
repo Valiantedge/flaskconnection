@@ -1,6 +1,5 @@
 
 
-bearer_scheme = HTTPBearer()
 from fastapi import APIRouter, HTTPException, Header, Depends, Security, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
