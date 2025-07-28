@@ -198,6 +198,8 @@ async def main():
         customer_id = os.getenv("CUSTOMER_ID")
         environment_id = os.getenv("ENVIRONMENT_ID")
         ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
+        customer_id = os.getenv("CUSTOMER_ID")
+        environment_id = os.getenv("ENVIRONMENT_ID")
         if customer_id and environment_id:
             ws_url += f"?customer_id={customer_id}&environment_id={environment_id}"
         while True:
@@ -211,7 +213,7 @@ async def main():
                         command = data.get("command")
                         print(f"[INFO] Executing: {command}", flush=True)
                         try:
-                            # Stream output line by line
+                            # Stream output line by line as JSON chunks
                             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
                             for line in process.stdout:
                                 await ws.send(json.dumps({"output": line, "end": False}))
