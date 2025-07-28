@@ -117,7 +117,7 @@ async def stream_command(payload: dict = Body(...)):
 
     return StreamingResponse(run_and_stream(), media_type="text/plain")
 
-@router.websocket("/ws-command/{agent_id}")
+@router.websocket("/ws/agent/{agent_id}")
 async def websocket_command(websocket: WebSocket, agent_id: int):
     await websocket.accept()
     connected_agents[agent_id] = websocket

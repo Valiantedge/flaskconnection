@@ -93,7 +93,7 @@ import sys
 
 API_URL = "https://socket.valiantedgetech.com/api/agent/register"
 HEARTBEAT_URL = "https://socket.valiantedgetech.com/api/agent/heartbeat"
-WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/api/agent/ws-command/{agent_id}"
+WS_URL_TEMPLATE = "wss://socket.valiantedgetech.com/ws/agent/{agent_id}"
 CREDENTIALS_FILE = "agent_credentials.json"
 
 
