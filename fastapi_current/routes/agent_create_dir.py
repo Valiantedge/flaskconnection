@@ -26,6 +26,7 @@ def get_db():
 
 @router.post("/run-command")
 async def run_command(payload: dict = Body(...)):
+    print("[DEBUG] /run-command called with payload:", payload, flush=True)
     agent_id = payload.get("agent_id")
     command = payload.get("command")
     missing = [k for k in ("agent_id", "command") if not payload.get(k)]
@@ -34,7 +35,9 @@ async def run_command(payload: dict = Body(...)):
     if not isinstance(command, str):
         return {"status": "error", "detail": "'command' must be a string"}
     agent_ws = connected_agents.get(int(agent_id))
+    print(f"[DEBUG] connected_agents keys: {list(connected_agents.keys())}", flush=True)
     if not agent_ws:
+        print(f"[ERROR] Agent {agent_id} is not connected (connected_agents={list(connected_agents.keys())})", flush=True)
         return {"status": "error", "detail": f"Agent {agent_id} is not connected"}
 
     async def stream_from_agent():
@@ -100,6 +103,7 @@ async def stream_command(payload: dict = Body(...)):
 async def websocket_command(websocket: WebSocket, agent_id: int):
     await websocket.accept()
     connected_agents[agent_id] = websocket
+    print(f"[DEBUG] Agent {agent_id} connected via websocket. connected_agents={list(connected_agents.keys())}", flush=True)
     try:
         while True:
             data = await websocket.receive_json()
@@ -107,6 +111,7 @@ async def websocket_command(websocket: WebSocket, agent_id: int):
             if not command or not isinstance(command, str):
                 await websocket.send_text("Missing or invalid 'command' field (must be a string)\n")
                 continue
+            print(f"[DEBUG] Executing command for agent {agent_id}: {command}", flush=True)
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
@@ -120,6 +125,8 @@ async def websocket_command(websocket: WebSocket, agent_id: int):
             await process.wait()
             await websocket.send_text("[END]")
     except WebSocketDisconnect:
+        print(f"[DEBUG] Agent {agent_id} disconnected from websocket.", flush=True)
         pass
     finally:
         connected_agents.pop(agent_id, None)
+        print(f"[DEBUG] Agent {agent_id} removed from connected_agents. connected_agents={list(connected_agents.keys())}", flush=True)
