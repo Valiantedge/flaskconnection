@@ -2,11 +2,16 @@
 from fastapi import APIRouter, Body
 from models import Command
 from config import SessionLocal
-from sqlalchemy.orm import Session
-import os
 
 router = APIRouter()
 
+# Add missing get_db function
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.post("/api/agent/create-directory")
 async def create_directory(payload: dict = Body(...)):
