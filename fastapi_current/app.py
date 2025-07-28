@@ -33,7 +33,7 @@ app.include_router(command.router, prefix="/api/command")
 app.include_router(long_command.router, prefix="/api/ansible")
 app.include_router(ws_server.router)
 app.include_router(agent_test.router)  # Include agent_test router
-app.include_router(agent_create_dir.router)  # Register the new endpoint
+app.include_router(agent_create_dir.router, prefix="/api/agent")  # Register the new endpoint with correct prefix
 app.include_router(agent_next_command.router)  # Register the next-command endpoint
 
 # Automatically create tables if they do not exist
