@@ -20,7 +20,8 @@ async def send_command(agent_id: int, body: dict = Body(...)):
     key = (agent_id, customer_id, environment_id)
     agent_ws = connected_agents.get(key)
     if not agent_ws:
-        return {"error": f"Agent {key} is not connected"}
+        print(f"[DEBUG] Connected agent keys: {list(connected_agents.keys())}")
+        return {"error": f"Agent {key} is not connected", "connected_keys": list(connected_agents.keys())}
 
     async def stream_output():
         await agent_ws.send_json({"command": command})
