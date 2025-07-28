@@ -1,4 +1,3 @@
-
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Depends
 import asyncio
 from sqlalchemy.orm import Session
@@ -14,6 +13,22 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Store connected UI/admin clients
+ui_clients = set()
+
+@router.websocket("/ws/ui/{agent_id}")
+async def ui_websocket(websocket: WebSocket, agent_id: int):
+    await websocket.accept()
+    ui_clients.add(websocket)
+    print(f"[INFO] UI client connected for agent {agent_id}.")
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        print(f"[INFO] UI client for agent {agent_id} disconnected.")
+    finally:
+        ui_clients.discard(websocket)
 
 @router.websocket("/ws/agent/{agent_id}")
 async def websocket_endpoint(websocket: WebSocket, agent_id: int):
@@ -49,6 +64,12 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: int):
                         chunk = response.get('output', '')
                         end = response.get('end', False)
                         output_accum += chunk
+                        # Forward chunk to all connected UI clients for this agent
+                        for ui_ws in list(ui_clients):
+                            try:
+                                await ui_ws.send_text(chunk)
+                            except Exception:
+                                ui_clients.discard(ui_ws)
                         # Optionally, print or forward chunk here for live UI
                         if end:
                             break
