@@ -1,7 +1,7 @@
-
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 from models import Command
 from config import SessionLocal
+import subprocess
 
 router = APIRouter()
 
@@ -35,3 +35,21 @@ async def create_directory(payload: dict = Body(...)):
     db.commit()
     db.refresh(cmd)
     return {"status": "queued", "command_id": cmd.id, "agent_id": agent_id, "customer_id": customer_id, "environment_id": environment_id, "path": path}
+
+@router.post("/api/agent/run-command")
+async def run_command(payload: dict = Body(...), db=Depends(get_db)):
+    command = payload.get("command")
+    if not command or not isinstance(command, str):
+        return {"status": "error", "detail": "Missing or invalid 'command' field (must be a string)"}
+    try:
+        # Run the command and capture output
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        return {
+            "status": "ok",
+            "command": command,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode
+        }
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
