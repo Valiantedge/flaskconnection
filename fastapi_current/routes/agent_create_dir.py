@@ -99,34 +99,3 @@ async def stream_command(payload: dict = Body(...)):
 
     return StreamingResponse(run_and_stream(), media_type="text/plain")
 
-@router.websocket("/ws/agent/{agent_id}")
-async def websocket_command(websocket: WebSocket, agent_id: int):
-    await websocket.accept()
-    connected_agents[agent_id] = websocket
-    print(f"[DEBUG] Agent {agent_id} connected via websocket. connected_agents={list(connected_agents.keys())}", flush=True)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            command = data.get("command")
-            if not command or not isinstance(command, str):
-                await websocket.send_text("Missing or invalid 'command' field (must be a string)\n")
-                continue
-            print(f"[DEBUG] Executing command for agent {agent_id}: {command}", flush=True)
-            process = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-            )
-            while True:
-                line = await process.stdout.readline()
-                if not line:
-                    break
-                await websocket.send_text(line.decode())
-            await process.wait()
-            await websocket.send_text("[END]")
-    except WebSocketDisconnect:
-        print(f"[DEBUG] Agent {agent_id} disconnected from websocket.", flush=True)
-        pass
-    finally:
-        connected_agents.pop(agent_id, None)
-        print(f"[DEBUG] Agent {agent_id} removed from connected_agents. connected_agents={list(connected_agents.keys())}", flush=True)
