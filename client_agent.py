@@ -1,3 +1,38 @@
+def poll_for_commands():
+    import time
+    import requests
+    import subprocess
+    import json
+    CREDENTIALS_FILE = "agent_credentials.json"
+    API_URL = "https://socket.valiantedgetech.com/api/agent/next-command"
+    try:
+        with open(CREDENTIALS_FILE, "r") as f:
+            creds = json.load(f)
+            agent_id = creds.get("agent_id")
+    except Exception:
+        agent_id = None
+    if not agent_id:
+        print("[ERROR] No agent_id found for polling commands.")
+        return
+    while True:
+        try:
+            resp = requests.get(f"{API_URL}?agent_id={agent_id}", timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                command = data.get("command")
+                command_id = data.get("command_id")
+                if command:
+                    print(f"[INFO] Polled command: {command}")
+                    try:
+                        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                        output = result.stdout + result.stderr
+                        print(f"[INFO] Command output: {output}")
+                        # Optionally, report result back to backend here
+                    except Exception as e:
+                        print(f"[ERROR] Command execution failed: {e}")
+        except Exception as e:
+            print(f"[ERROR] Polling exception: {e}")
+        time.sleep(10)
 CREDENTIALS_FILE = "agent_credentials.json"
 
 def send_heartbeat(token):
@@ -147,26 +182,33 @@ async def main():
         # Start heartbeat thread (token is not needed for WebSocket)
         heartbeat_thread = threading.Thread(target=send_heartbeat, args=(token,), daemon=True)
         heartbeat_thread.start()
-        # Add customer_id and environment_id as query params
+        # Start polling thread for commands
+        polling_thread = threading.Thread(target=poll_for_commands, daemon=True)
+        polling_thread.start()
         customer_id = os.getenv("CUSTOMER_ID")
         environment_id = os.getenv("ENVIRONMENT_ID")
         ws_url = WS_URL_TEMPLATE.format(agent_id=agent_id)
         if customer_id and environment_id:
             ws_url += f"?customer_id={customer_id}&environment_id={environment_id}"
-        print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
-        async with websockets.connect(ws_url) as ws:
-            print("[INFO] Connected to server", flush=True)
-            while True:
-                message = await ws.recv()
-                data = json.loads(message)
-                command = data.get("command")
-                print(f"[INFO] Executing: {command}", flush=True)
-                try:
-                    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                    output = result.stdout + result.stderr
-                    await ws.send(json.dumps({"output": output}))
-                except Exception as e:
-                    await ws.send(json.dumps({"output": str(e)}))
+        while True:
+            try:
+                print(f"[DEBUG] Connecting to websocket: {ws_url}", flush=True)
+                async with websockets.connect(ws_url) as ws:
+                    print("[INFO] Connected to server", flush=True)
+                    while True:
+                        message = await ws.recv()
+                        data = json.loads(message)
+                        command = data.get("command")
+                        print(f"[INFO] Executing: {command}", flush=True)
+                        try:
+                            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                            output = result.stdout + result.stderr
+                            await ws.send(json.dumps({"output": output}))
+                        except Exception as e:
+                            await ws.send(json.dumps({"output": str(e)}))
+            except Exception as e:
+                print(f"[ERROR] WebSocket connection failed: {e}. Retrying in 10 seconds...", flush=True)
+                await asyncio.sleep(10)
 
 if __name__ == "__main__":
     asyncio.run(main())
