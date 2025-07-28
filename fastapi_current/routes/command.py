@@ -12,6 +12,14 @@ router = APIRouter(dependencies=[Security(bearer_scheme)])
 
 
 
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 # Endpoint for agent to report command output
 class CommandOutputReport(BaseModel):
