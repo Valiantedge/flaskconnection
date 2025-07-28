@@ -1,6 +1,8 @@
 
+
 # Endpoint for agent to report command output
 from fastapi import Body
+from pydantic import BaseModel
 
 class CommandOutputReport(BaseModel):
     command_id: int
