@@ -18,44 +18,53 @@ def get_db():
 ui_clients = set()
 
 
+
 # Track connected agent websockets in memory, keyed by (agent_id, customer_id, environment_id)
 connected_agents = {}
+# Track command queues for each agent
+command_queues = {}
 
 
 from fastapi import Query
+
 
 @router.websocket("/ws/agent/{agent_id}")
 async def websocket_command(websocket: WebSocket, agent_id: int, customer_id: int = Query(...), environment_id: int = Query(...)):
     await websocket.accept()
     key = (agent_id, customer_id, environment_id)
     connected_agents[key] = websocket
+    command_queue = asyncio.Queue()
+    command_queues[key] = command_queue
     print(f"[DEBUG] Agent {key} connected via websocket. connected_agents={list(connected_agents.keys())}", flush=True)
     try:
         while True:
-            data = await websocket.receive_json()
-            command = data.get("command")
-            if not command or not isinstance(command, str):
-                await websocket.send_text("Missing or invalid 'command' field (must be a string)\n")
-                continue
-            print(f"[DEBUG] Executing command for agent {key}: {command}", flush=True)
-            process = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-            )
+            # Wait for a command from the queue (sent by HTTP endpoint)
+            command = await command_queue.get()
+            print(f"[DEBUG] Sending command to agent {key}: {command}", flush=True)
+            await websocket.send_json({"command": command})
+            # Wait for output from the agent
             while True:
-                line = await process.stdout.readline()
-                if not line:
+                msg = await websocket.receive_text()
+                if msg == "[END]":
                     break
-                await websocket.send_text(line.decode())
-            await process.wait()
-            await websocket.send_text("[END]")
+                # Optionally, you can store or forward this output
+                # For now, just print it
+                print(f"[AGENT OUTPUT] {key}: {msg}", flush=True)
     except WebSocketDisconnect:
         print(f"[DEBUG] Agent {key} disconnected from websocket.", flush=True)
         pass
     finally:
         connected_agents.pop(key, None)
+        command_queues.pop(key, None)
         print(f"[DEBUG] Agent {key} removed from connected_agents. connected_agents={list(connected_agents.keys())}", flush=True)
+
+# Function to enqueue a command for an agent
+async def send_command_to_agent(agent_id, customer_id, environment_id, command):
+    key = (agent_id, customer_id, environment_id)
+    if key not in command_queues:
+        return False, f"Agent {key} is not connected"
+    await command_queues[key].put(command)
+    return True, "Command sent"
 
 @router.websocket("/ws/ui/{agent_id}")
 async def ui_websocket(websocket: WebSocket, agent_id: int):
